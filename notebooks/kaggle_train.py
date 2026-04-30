@@ -43,31 +43,24 @@ import shutil
 KAGGLE_INPUT = "/kaggle/input"
 DATASET_DIR = None
 
-# /kaggle/input içindeki tüm klasörleri tara (isminin ne olduğuna bakılmaksızın)
 if os.path.exists(KAGGLE_INPUT):
-    for item in os.listdir(KAGGLE_INPUT):
-        item_path = os.path.join(KAGGLE_INPUT, item)
-        if not os.path.isdir(item_path): continue
-            
-        subdirs = [d.lower() for d in os.listdir(item_path) if os.path.isdir(os.path.join(item_path, d))]
-        if "images" in subdirs or "optical" in subdirs or "sar" in subdirs or "labels" in subdirs:
-            DATASET_DIR = item_path
+    for root, dirs, files in os.walk(KAGGLE_INPUT):
+        dirs_lower = [d.lower() for d in dirs]
+        # Eğer bu klasörün içinde optik ve sar ve etiket klasörleri varsa, burası kök dizindir.
+        if "labels" in dirs_lower and ("images" in dirs_lower or "optical" in dirs_lower or "sar" in dirs_lower or "opt" in dirs_lower):
+            DATASET_DIR = root
             break
-            
-        # Alt klasörleri kontrol et (bazen zip içeriği bir klasör içine açılır)
-        for subitem in os.listdir(item_path):
-            subitem_path = os.path.join(item_path, subitem)
-            if not os.path.isdir(subitem_path): continue
-            subsubdirs = [d.lower() for d in os.listdir(subitem_path) if os.path.isdir(os.path.join(subitem_path, d))]
-            if "images" in subsubdirs or "optical" in subsubdirs or "sar" in subsubdirs or "labels" in subsubdirs:
-                DATASET_DIR = subitem_path
-                break
-        if DATASET_DIR: break
 
 if not DATASET_DIR:
     print("❌ HATA: Veri seti bulunamadı!")
-    print(f"Şu anki Kaggle Input klasörleri: {os.listdir(KAGGLE_INPUT) if os.path.exists(KAGGLE_INPUT) else 'Yok'}")
-    print("Lütfen sağ üstteki 'Add Data' butonuna tıklayıp M4-SAR veri setini eklediğinizden emin olun.")
+    print("\nKaggle Input Klasörünün İçindekiler:")
+    import subprocess
+    try:
+        subprocess.run(["find", KAGGLE_INPUT, "-maxdepth", "3"], check=False)
+    except Exception as e:
+        print(f"Listeleme hatası: {e}")
+    print("\nEğer yukarıdaki listede 'images' veya 'labels' klasörleri yoksa, eklediğiniz veri seti BOŞ olabilir.")
+    print("Lütfen 'Add Data' kısmından 'wchao0601/m4-sar' veri setini seçtiğinize emin olun.")
     sys.exit(1)
 else:
     print(f"📂 Veri seti bulundu: {DATASET_DIR}")
