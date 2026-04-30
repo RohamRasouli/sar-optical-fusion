@@ -167,20 +167,35 @@ class M4SARDataset(Dataset):
         self.sar_dir = self.root / "sar" / self.split
         self.label_dir = self.root / "labels" / self.split
 
-        # Kaggle raw dataset yapıları ve büyük/küçük harf farklılıkları için süper dinamik arama
+        # Kaggle raw dataset yapıları ve büyük/küçük harf farklılıkları için SÜPER HIZLI dinamik arama
+        # (Bulut FUSE sistemlerinde rglob("*") 180.000 dosyayı taradığı için kilitlenmeye sebep olur)
         if not self.optical_dir.exists():
-            for p in self.root.rglob("*"):
-                if not p.is_dir(): continue
-                # Klasör adı train/val/test ise (Büyük/küçük harf duyarsız)
-                if p.name.lower() == self.split.lower():
-                    parent_name = p.parent.name.lower()
+            queue = [(self.root, 0)]
+            max_depth = 10
+            
+            while queue:
+                curr_dir, depth = queue.pop(0)
+                if depth > max_depth: continue
+                
+                try:
+                    for p in curr_dir.iterdir():
+                        if not p.is_dir(): continue
                         
-                    if "opt" in parent_name or "images" in parent_name:
-                        self.optical_dir = p
-                    elif "sar" in parent_name:
-                        self.sar_dir = p
-                    elif "label" in parent_name:
-                        self.label_dir = p
+                        # Eğer klasör adı train/val/test ise (Büyük/küçük harf duyarsız)
+                        if p.name.lower() == self.split.lower():
+                            parent_name = p.parent.name.lower()
+                            if "opt" in parent_name or "images" in parent_name:
+                                self.optical_dir = p
+                            elif "sar" in parent_name:
+                                self.sar_dir = p
+                            elif "label" in parent_name:
+                                self.label_dir = p
+                            # Klasörü bulduk, içine girip 100.000 dosyayı taramaya gerek YOK! (Kilitlenmeyi önler)
+                        else:
+                            # Bulamadıysak alt klasöre girmek için sıraya ekle
+                            queue.append((p, depth + 1))
+                except Exception:
+                    pass
 
         # Optik dosyalardan ID listesi çıkar
         if not self.optical_dir.exists():
