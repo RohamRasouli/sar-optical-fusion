@@ -42,15 +42,20 @@ import glob
 KAGGLE_INPUT = "/kaggle/input"
 possible_dirs = glob.glob(f"{KAGGLE_INPUT}/*m4*") + glob.glob(f"{KAGGLE_INPUT}/*M4*")
 if not possible_dirs:
-    possible_dirs = glob.glob(f"{KAGGLE_INPUT}/*")
-    print(f"⚠️  Mevcut veri setleri: {possible_dirs}")
-    print("    Lütfen sağ panelden M4-SAR veri setinizi eklediğinizden emin olun.")
+    print("⚠️  Sağ panelden veri seti eklenmemiş. Sorun değil, internetten otomatik indiriliyor (HuggingFace)...")
+    subprocess.run([sys.executable, "-m", "pip", "install", "-q", "huggingface_hub"], check=True)
+    subprocess.run([
+        sys.executable, "scripts/download_m4sar.py", 
+        "--source", "huggingface", 
+        "--target-dir", "/kaggle/working/sar-optical-fusion/data/m4_sar"
+    ], check=True)
+    print("✅ Veri seti HuggingFace'den indirildi ve hazırlandı!")
 else:
     DATASET_DIR = possible_dirs[0]
     print(f"📂 Veri seti bulundu: {DATASET_DIR}")
     
-    # download_m4sar.py scriptini kullanarak veriyi doğru formata dönüştür (sadece kopyalama/linkleme yapar)
-    print("🔄 Veri seti proje formatına dönüştürülüyor...")
+    # download_m4sar.py scriptini kullanarak veriyi doğru formata dönüştür
+    print("🔄 Kaggle'daki veri seti proje formatına dönüştürülüyor...")
     subprocess.run([
         sys.executable, "scripts/download_m4sar.py", 
         "--source", "manual", 
