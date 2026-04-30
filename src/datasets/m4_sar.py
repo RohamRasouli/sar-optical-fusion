@@ -167,28 +167,19 @@ class M4SARDataset(Dataset):
         self.sar_dir = self.root / "sar" / self.split
         self.label_dir = self.root / "labels" / self.split
 
-        # Kaggle raw dataset yapıları için fallback
+        # Kaggle raw dataset yapıları ve büyük/küçük harf farklılıkları için süper dinamik arama
         if not self.optical_dir.exists():
-            if (self.root / "images" / "opt" / self.split).exists():
-                self.optical_dir = self.root / "images" / "opt" / self.split
-                self.sar_dir = self.root / "images" / "sar" / self.split
-                self.label_dir = self.root / "labels" / self.split
-            elif (self.root / "optical" / "images" / self.split).exists():
-                self.optical_dir = self.root / "optical" / "images" / self.split
-                self.sar_dir = self.root / "sar" / "images" / self.split
-                self.label_dir = self.root / "optical" / "labels" / self.split
-            elif (self.root / "m4_sar" / "images" / "opt" / self.split).exists():
-                self.optical_dir = self.root / "m4_sar" / "images" / "opt" / self.split
-                self.sar_dir = self.root / "m4_sar" / "images" / "sar" / self.split
-                self.label_dir = self.root / "m4_sar" / "labels" / self.split
-            else:
-                # Kaggle'da klasör yapısı biraz daha derinde olabilir
-                for subdir in self.root.iterdir():
-                    if subdir.is_dir() and (subdir / "images" / "opt" / self.split).exists():
-                        self.optical_dir = subdir / "images" / "opt" / self.split
-                        self.sar_dir = subdir / "images" / "sar" / self.split
-                        self.label_dir = subdir / "labels" / self.split
-                        break
+            for p in self.root.rglob("*"):
+                if not p.is_dir(): continue
+                # Klasör adı train/val/test ise (Büyük/küçük harf duyarsız)
+                if p.name.lower() == self.split.lower():
+                    path_str = str(p).lower()
+                    if ("opt" in path_str or "images" in path_str) and "sar" not in path_str:
+                        self.optical_dir = p
+                    elif "sar" in path_str and "opt" not in path_str:
+                        self.sar_dir = p
+                    elif "label" in path_str:
+                        self.label_dir = p
 
         # Optik dosyalardan ID listesi çıkar
         if not self.optical_dir.exists():
