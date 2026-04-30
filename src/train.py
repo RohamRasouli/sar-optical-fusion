@@ -69,18 +69,13 @@ def build_dataset(cfg: dict, split: str = "train"):
             net_overlay_prob=c.get("net_overlay_prob", 0.5),
         ))
 
-    try:
-        m4_cfg = M4SARConfig(
-            data_root=data_cfg["data_root"],
-            split=split,
-            img_size=cfg["model"]["img_size"],
-            augment=(split == "train"),
-        )
-        return M4SARDataset(m4_cfg, camo_synth_aug=camo_aug)
-    except (FileNotFoundError, RuntimeError) as e:
-        print(f"  ! M4-SAR yüklenemedi ({e}). Dummy veri seti kullanılıyor.")
-        return DummyM4SARDataset(num_samples=128 if split == "train" else 32,
-                                  img_size=cfg["model"]["img_size"])
+    m4_cfg = M4SARConfig(
+        data_root=data_cfg["data_root"],
+        split=split,
+        img_size=cfg["model"]["img_size"],
+        augment=(split == "train"),
+    )
+    return M4SARDataset(m4_cfg, camo_synth_aug=camo_aug)
 
 
 def build_optimizer(model: torch.nn.Module, cfg: dict):

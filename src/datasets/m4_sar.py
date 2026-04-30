@@ -187,21 +187,27 @@ class M4SARDataset(Dataset):
                             if entry.is_dir(follow_symlinks=True):
                                 # Eğer klasör adı 'train' veya 'val' veya 'test' ise (split adımız)
                                 if entry.name.lower() == self.split.lower():
+                                    full_p = entry.path.lower()
                                     p = Path(entry.path)
-                                    p_name = p.parent.name.lower()
                                     
-                                    # Kategori eşleştirme (keyword tabanlı)
-                                    if any(k in p_name for k in ["opt", "image", "visual", "rgb"]):
-                                        found_opt = p
-                                        print(f"  ✅ Optik bulundu: {p}", flush=True)
-                                    elif any(k in p_name for k in ["sar", "radar", "s1", "sentinel1"]):
+                                    # ÖNCELİKLİ eşleştirme (Yolun tamamına bakıyoruz)
+                                    if any(k in full_p for k in ["label", "ann", "mask", "gt"]):
+                                        if "sar" in full_p:
+                                            # Bazı setlerde sar/labels var, bunu atlayalım veya sar_label yapalım
+                                            # Ama ana label klasörünü istiyoruz. Genelde /optical/labels kullanılır.
+                                            if not found_lbl: found_lbl = p
+                                        else:
+                                            found_lbl = p
+                                        print(f"  ✅ Etiketler bulundu: {p}", flush=True)
+                                    elif any(k in full_p for k in ["sar", "radar", "s1", "sentinel1"]):
                                         found_sar = p
                                         print(f"  ✅ SAR/Radar bulundu: {p}", flush=True)
-                                    elif any(k in p_name for k in ["label", "ann", "mask", "gt"]):
-                                        found_lbl = p
-                                        print(f"  ✅ Etiketler bulundu: {p}", flush=True)
+                                    elif any(k in full_p for k in ["opt", "image", "visual", "rgb"]):
+                                        # Eğer zaten SAR olarak işaretlemediysek
+                                        if not found_sar or str(p) != str(found_sar):
+                                            found_opt = p
+                                            print(f"  ✅ Optik bulundu: {p}", flush=True)
                                 else:
-                                    # Aramaya devam et
                                     queue.append((entry.path, depth + 1))
                 except Exception:
                     pass
