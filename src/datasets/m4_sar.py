@@ -167,34 +167,37 @@ class M4SARDataset(Dataset):
         self.sar_dir = self.root / "sar" / self.split
         self.label_dir = self.root / "labels" / self.split
 
-        # Kaggle raw dataset yapıları ve büyük/küçük harf farklılıkları için SÜPER HIZLI dinamik arama
-        # (Bulut FUSE sistemlerinde rglob("*") 180.000 dosyayı taradığı için kilitlenmeye sebep olur)
+        import os
+        # Kaggle raw dataset yapıları ve büyük/küçük harf farklılıkları için ULTRA HIZLI dinamik arama
+        # (os.scandir kullanarak network mount üzerindeki stat() çağrılarını minimize ederiz)
         if not self.optical_dir.exists():
-            print(f"🔍 [{self.split.upper()}] Klasör hiyerarşisi taranıyor (BFS ile klasörler bulunuyor)...", flush=True)
-            queue = [(self.root, 0)]
+            print(f"🔍 [{self.split.upper()}] Klasör hiyerarşisi taranıyor (os.scandir ile)...", flush=True)
+            queue = [(str(self.root), 0)]
             max_depth = 10
+            found_count = 0
             
-            while queue:
+            while queue and found_count < 3:
                 curr_dir, depth = queue.pop(0)
                 if depth > max_depth: continue
                 
                 try:
-                    for p in curr_dir.iterdir():
-                        if not p.is_dir(): continue
-                        
-                        # Eğer klasör adı train/val/test ise (Büyük/küçük harf duyarsız)
-                        if p.name.lower() == self.split.lower():
-                            parent_name = p.parent.name.lower()
-                            if "opt" in parent_name or "images" in parent_name:
-                                self.optical_dir = p
-                            elif "sar" in parent_name:
-                                self.sar_dir = p
-                            elif "label" in parent_name:
-                                self.label_dir = p
-                            # Klasörü bulduk, içine girip 100.000 dosyayı taramaya gerek YOK! (Kilitlenmeyi önler)
-                        else:
-                            # Bulamadıysak alt klasöre girmek için sıraya ekle
-                            queue.append((p, depth + 1))
+                    with os.scandir(curr_dir) as it:
+                        for entry in it:
+                            if entry.is_dir(follow_symlinks=True):
+                                if entry.name.lower() == self.split.lower():
+                                    p = Path(entry.path)
+                                    parent_name = p.parent.name.lower()
+                                    if "opt" in parent_name or "images" in parent_name:
+                                        self.optical_dir = p
+                                        found_count += 1
+                                    elif "sar" in parent_name:
+                                        self.sar_dir = p
+                                        found_count += 1
+                                    elif "label" in parent_name:
+                                        self.label_dir = p
+                                        found_count += 1
+                                else:
+                                    queue.append((entry.path, depth + 1))
                 except Exception:
                     pass
 
