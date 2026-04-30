@@ -16,7 +16,7 @@
 
 ```bash
 # Klonla ve kur
-git clone https://github.com/roham/sar-optical-fusion.git
+git clone https://github.com/RohamRasouli/sar-optical-fusion.git
 cd sar-optical-fusion
 pip install -e .
 

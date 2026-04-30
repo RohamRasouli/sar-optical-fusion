@@ -23,8 +23,8 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/roham/sar-optical-fusion"
-Repository = "https://github.com/roham/sar-optical-fusion"
+Homepage = "https://github.com/RohamRasouli/sar-optical-fusion"
+Repository = "https://github.com/RohamRasouli/sar-optical-fusion"
 
 [tool.setuptools.packages.find]
 where = ["."]
