@@ -106,9 +106,22 @@ def build_scheduler(optimizer, cfg: dict, num_steps: int):
     return torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
 
 
-def train_one_epoch(model, loader, loss_fn, optimizer, scheduler, scaler,
-                    device, epoch, log_interval=20, amp=True,
-                    grad_clip=10.0, grad_accum=1, logger=None):
+def train_one_epoch(
+    model: torch.nn.Module,
+    loader: DataLoader,
+    loss_fn: Any,
+    optimizer: torch.optim.Optimizer,
+    scheduler: Any,
+    scaler: torch.cuda.amp.GradScaler,
+    device: torch.device,
+    epoch: int,
+    log_interval: int = 20,
+    amp: bool = True,
+    grad_clip: float = 10.0,
+    grad_accum: int = 1,
+    logger: Any = None,
+    slow_down: bool = False,
+) -> Tuple[float, float]:
     model.train()
     total_loss = 0.0
     n_batches = 0
@@ -151,7 +164,7 @@ def train_one_epoch(model, loader, loss_fn, optimizer, scheduler, scaler,
             print(f"  [E{epoch} B{i:04d}] loss={loss.item():.3f} lr={lr:.2e} | {comp}")
 
         # GPU'yu soğutmak için çok kısa bir bekleme (Sadece slow_down aktifse)
-        if cfg.get("training", {}).get("slow_down", False):
+        if slow_down:
             time.sleep(0.1)  # 100ms bekleme GPU yükünü %98'den %60-70'lere düşürür
             if logger is not None:
                 step = epoch * len(loader) + i
@@ -310,6 +323,7 @@ def main():
             grad_clip=cfg["training"]["grad_clip_norm"],
             grad_accum=cfg["training"].get("grad_accum_steps", 1),
             logger=logger,
+            slow_down=args.slow_down,
         )
         print(f"Epoch {epoch} tamamlandı — avg_loss={avg_loss:.4f}, süre={elapsed:.1f}s")
 
