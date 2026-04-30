@@ -28,9 +28,30 @@ from .models.full_model import ModelConfig, build_model
 from .utils.wandb_logger import WandBLogger
 
 
+def dict_merge(dct, merge_dct):
+    for k, v in merge_dct.items():
+        if (k in dct and isinstance(dct[k], dict) and isinstance(v, dict)):
+            dict_merge(dct[k], v)
+        else:
+            dct[k] = v
+    return dct
+
 def load_config(path: str) -> dict:
     with open(path, "r") as f:
-        return yaml.safe_load(f)
+        cfg = yaml.safe_load(f)
+    if "defaults" in cfg:
+        base_cfg = {}
+        base_dir = Path(path).parent
+        for item in cfg["defaults"]:
+            if isinstance(item, str):
+                base_path = base_dir / item
+                if base_path.exists():
+                    with open(base_path, "r") as bf:
+                        dict_merge(base_cfg, yaml.safe_load(bf))
+        cfg.pop("defaults")
+        dict_merge(base_cfg, cfg)
+        return base_cfg
+    return cfg
 
 
 def build_dataset(cfg: dict, split: str = "train"):
@@ -236,7 +257,7 @@ def main():
         dfl_w=loss_cfg["dfl_weight"],
         cal_cfg=cal_cfg,
         img_size=m_cfg["img_size"],
-    )
+    ).to(device)
 
     # Optimizer / scheduler
     optimizer = build_optimizer(model, cfg)

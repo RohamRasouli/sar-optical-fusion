@@ -4,9 +4,13 @@
 defaults:
   - base.yaml
 
+model:
+  img_size: 416
+
 training:
   epochs: 80
-  batch_size: 16
+  batch_size: 2
+  grad_accum_steps: 16
 
 loss:
   camouflage_aware:

@@ -213,7 +213,7 @@ class DetectionLoss(nn.Module):
         pred_box_dist = torch.cat(pred_box_dist, dim=2).transpose(1, 2)
         pred_cls = torch.cat(pred_cls, dim=2).transpose(1, 2)
         # (B, N, 4*(reg_max+1)) → (B, N, 4, reg_max+1)
-        pred_box_dist = pred_box_dist.view(B, -1, 4, self.reg_max + 1)
+        pred_box_dist = pred_box_dist.reshape(B, -1, 4, self.reg_max + 1)
 
         anchor_points, stride_tensor = make_anchors(outs, self.strides)
         return pred_box_dist, pred_cls, anchor_points, stride_tensor
@@ -226,9 +226,7 @@ class DetectionLoss(nn.Module):
                     torch.zeros(batch_size, 0, 4, device=device),
                     torch.zeros(batch_size, 0, 1, device=device))
 
-        max_per_img = max(1, int((targets[:, 0] == i).sum().item()
-                                  for i in range(batch_size)).__class__(
-            max((targets[:, 0] == i).sum().item() for i in range(batch_size))))
+        max_per_img = max(1, max(int((targets[:, 0] == i).sum().item()) for i in range(batch_size)))
 
         gt_labels = torch.zeros(batch_size, max_per_img, 1, device=device)
         gt_bboxes = torch.zeros(batch_size, max_per_img, 4, device=device)
@@ -265,7 +263,7 @@ class DetectionLoss(nn.Module):
 
         # Pred bbox: DFL → mesafe → cxcywh (piksel)
         pred_dist_softmax = pred_dist.softmax(dim=-1)
-        pred_ltrb = (pred_dist_softmax * self.proj.view(1, 1, 1, -1)).sum(dim=-1)  # (B, N, 4)
+        pred_ltrb = (pred_dist_softmax * self.proj.reshape(1, 1, 1, -1)).sum(dim=-1)  # (B, N, 4)
         pred_bboxes = dist2bbox(pred_ltrb, anchor_points, xywh=True) * stride_tensor  # piksel
 
         pred_scores = pred_cls.sigmoid()  # (B, N, nc)
@@ -309,8 +307,8 @@ class DetectionLoss(nn.Module):
             target_ltrb = target_ltrb / stride_tensor  # stride'a böl (DFL aralığına getir)
             fg_dist = pred_dist[fg_mask]  # (num_pos, 4, reg_max+1)
             fg_target = target_ltrb[fg_mask]  # (num_pos, 4)
-            dfl_loss = self.dfl(fg_dist.view(-1, self.reg_max + 1),
-                                fg_target.view(-1)).sum() / num_pos
+            dfl_loss = self.dfl(fg_dist.reshape(-1, self.reg_max + 1),
+                                fg_target.reshape(-1)).sum() / num_pos
         else:
             dfl_loss = torch.tensor(0.0, device=pred_cls.device)
 
@@ -323,12 +321,22 @@ class DetectionLoss(nn.Module):
 
         # --- CamouflageAware Loss (opsiyonel) ---
         if self.cal is not None:
+            aux_opt_logits = None
+            if "aux_opt" in model_out and model_out["aux_opt"] is not None:
+                _, opt_cls, _, _ = self._split_outputs(model_out["aux_opt"])
+                aux_opt_logits = opt_cls.reshape(-1, self.nc)
+
+            aux_sar_logits = None
+            if "aux_sar" in model_out and model_out["aux_sar"] is not None:
+                _, sar_cls, _, _ = self._split_outputs(model_out["aux_sar"])
+                aux_sar_logits = sar_cls.reshape(-1, self.nc)
+
             cal_out = self.cal(
-                cls_logits=pred_cls.view(-1, self.nc),
-                cls_targets=target_scores.view(-1, self.nc),
+                cls_logits=pred_cls.reshape(-1, self.nc),
+                cls_targets=target_scores.reshape(-1, self.nc),
                 difficulty=None,  # ileride model uncertainty eklenebilir
-                aux_opt_logits=model_out.get("aux_opt", [None])[0] if "aux_opt" in model_out else None,
-                aux_sar_logits=model_out.get("aux_sar", [None])[0] if "aux_sar" in model_out else None,
+                aux_opt_logits=aux_opt_logits,
+                aux_sar_logits=aux_sar_logits,
                 epoch=epoch,
             )
             for k, v in cal_out.items():
