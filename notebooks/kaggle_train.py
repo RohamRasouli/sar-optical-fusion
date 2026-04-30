@@ -100,10 +100,13 @@ else:
 print("\n🚀 Eğitim başlıyor (Kaggle P100 — batch_size=16, img_size=640)...\n")
 
 # Kaggle P100 konfigürasyonu ile eğitimi başlat
+env = os.environ.copy()
+env["PYTHONPATH"] = "/kaggle/working/sar-optical-fusion" + (":" + env["PYTHONPATH"] if "PYTHONPATH" in env else "")
+
 subprocess.run([
     sys.executable, "-m", "src.train",
     "--config", "configs/kaggle_p100.yaml",
-], check=True)
+], env=env, check=True)
 
 print("\n✅ Eğitim tamamlandı!")
 
