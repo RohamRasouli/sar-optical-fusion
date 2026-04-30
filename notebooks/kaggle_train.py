@@ -40,7 +40,7 @@ import glob
 
 # Kaggle'ın veri seti dizinini bul
 KAGGLE_INPUT = "/kaggle/input"
-possible_dirs = glob.glob(f"{KAGGLE_INPUT}/*m4*sar*", re.IGNORECASE) if hasattr(glob, 're') else glob.glob(f"{KAGGLE_INPUT}/*m4*") + glob.glob(f"{KAGGLE_INPUT}/*M4*")
+possible_dirs = glob.glob(f"{KAGGLE_INPUT}/*m4*") + glob.glob(f"{KAGGLE_INPUT}/*M4*")
 if not possible_dirs:
     possible_dirs = glob.glob(f"{KAGGLE_INPUT}/*")
     print(f"⚠️  Mevcut veri setleri: {possible_dirs}")
