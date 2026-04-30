@@ -279,7 +279,7 @@ def main():
         optimizer.load_state_dict(ckpt["optimizer_state"])
         scheduler.load_state_dict(ckpt["scheduler_state"])
         start_epoch = ckpt["epoch"] + 1
-        print(f"[OK] Epoch {start_epoch} noktasından devam ediliyor.", flush=True)
+        print(f"[OK] Epoch {start_epoch} noktasindan devam ediliyor.", flush=True)
     
     # Slow down ayarını aktar
     cfg["training"]["slow_down"] = args.slow_down

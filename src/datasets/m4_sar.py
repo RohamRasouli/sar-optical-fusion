@@ -248,10 +248,9 @@ class M4SARDataset(Dataset):
         if not self.ids:
             raise RuntimeError(f"Hiç optik görüntü bulunamadı: {self.optical_dir}")
             
-        # [LINK] SENSÖR EŞLEŞTİRME (Kaggle FUSE mount dostu set operasyonları)
         print(f"[LINK] Sensor verileri eslestiriliyor (Optical + SAR + Label)...", flush=True)
         
-        # SAR ve Label klasörlerindeki ID'leri de listele
+        # SAR ve Label klasorlerindeki ID'leri de listele
         sar_ids = set()
         for f in os.listdir(self.sar_dir):
             if "." in f: sar_ids.add(f.rsplit(".", 1)[0])
@@ -260,7 +259,7 @@ class M4SARDataset(Dataset):
         for f in os.listdir(self.label_dir):
             if f.endswith(".txt"): label_ids.add(f[:-4])
             
-        # Kesişimi al: Sadece 3 klasörde de olanları tut
+        # Kesisimi al: Sadece 3 klasorde de olanlari tut
         final_ids = []
         for img_id in self.ids:
             if img_id in sar_ids and img_id in label_ids:
