@@ -41,47 +41,41 @@ import shutil
 
 # Kaggle'ın veri seti dizinini bul
 KAGGLE_INPUT = "/kaggle/input"
-DATASET_DIR = None
+DATASET_DIR = KAGGLE_INPUT
 
+# Kaggle Input klasöründe herhangi bir veri var mı kontrol et
+has_data = False
 if os.path.exists(KAGGLE_INPUT):
     for root, dirs, files in os.walk(KAGGLE_INPUT):
-        dirs_lower = [d.lower() for d in dirs]
-        # Eğer bu klasörün içinde optik ve sar ve etiket klasörleri varsa, burası kök dizindir.
-        if "labels" in dirs_lower and ("images" in dirs_lower or "optical" in dirs_lower or "sar" in dirs_lower or "opt" in dirs_lower):
-            DATASET_DIR = root
+        if len(files) > 0:
+            has_data = True
             break
 
-if not DATASET_DIR:
-    print("❌ HATA: Veri seti bulunamadı!")
-    print("\nKaggle Input Klasörünün İçindekiler:")
-    import subprocess
-    try:
-        subprocess.run(["find", KAGGLE_INPUT, "-maxdepth", "3"], check=False)
-    except Exception as e:
-        print(f"Listeleme hatası: {e}")
-    print("\nEğer yukarıdaki listede 'images' veya 'labels' klasörleri yoksa, eklediğiniz veri seti BOŞ olabilir.")
-    print("Lütfen 'Add Data' kısmından 'wchao0601/m4-sar' veri setini seçtiğinize emin olun.")
+if not has_data:
+    print("❌ HATA: Kaggle Input klasöründe hiç dosya bulunamadı!")
+    print("Lütfen sağ üstteki 'Add Data' butonuna tıklayıp 'wchao0601/m4-sar' veri setini ekleyin.")
     sys.exit(1)
-else:
-    print(f"📂 Veri seti bulundu: {DATASET_DIR}")
-    
-    # 48 GB'lık veriyi kopyalarsak Kaggle'ın 20 GB'lık disk limiti dolar.
-    # Bu yüzden sadece bir kısayol (symlink) oluşturuyoruz.
-    DATA_ROOT = "/kaggle/working/sar-optical-fusion/data/m4_sar"
-    
-    # Varsa eskisini sil
-    if os.path.exists(DATA_ROOT) or os.path.islink(DATA_ROOT):
-        if os.path.islink(DATA_ROOT):
-            os.unlink(DATA_ROOT)
-        else:
-            shutil.rmtree(DATA_ROOT)
-            
-    # Ana klasörün (data/) var olduğundan emin ol
-    os.makedirs(os.path.dirname(DATA_ROOT), exist_ok=True)
-            
-    # Kısayol oluştur
-    os.symlink(DATASET_DIR, DATA_ROOT)
-    print(f"🔗 Veri seti bağlandı: {DATA_ROOT} -> {DATASET_DIR}")
+
+print(f"📂 Veri seti Kaggle Input dizininden okunacak.")
+
+# 48 GB'lık veriyi kopyalarsak Kaggle'ın 20 GB'lık disk limiti dolar.
+# Bu yüzden sadece KAGGLE_INPUT'u projeye bağlıyoruz.
+# M4SARDataset sınıfı kendi içinde klasörleri otomatik (rglob ile) bulacak.
+DATA_ROOT = "/kaggle/working/sar-optical-fusion/data/m4_sar"
+
+# Varsa eskisini sil
+if os.path.exists(DATA_ROOT) or os.path.islink(DATA_ROOT):
+    if os.path.islink(DATA_ROOT):
+        os.unlink(DATA_ROOT)
+    else:
+        shutil.rmtree(DATA_ROOT)
+        
+# Ana klasörün (data/) var olduğundan emin ol
+os.makedirs(os.path.dirname(DATA_ROOT), exist_ok=True)
+        
+# Kısayol oluştur
+os.symlink(DATASET_DIR, DATA_ROOT)
+print(f"🔗 Kaggle Input dizini bağlandı: {DATA_ROOT} -> {DATASET_DIR}")
 
 # ============================================================
 # HÜCRE 3: GPU Kontrolü

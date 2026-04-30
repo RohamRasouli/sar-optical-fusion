@@ -173,12 +173,13 @@ class M4SARDataset(Dataset):
                 if not p.is_dir(): continue
                 # Klasör adı train/val/test ise (Büyük/küçük harf duyarsız)
                 if p.name.lower() == self.split.lower():
-                    path_str = str(p).lower()
-                    if ("opt" in path_str or "images" in path_str) and "sar" not in path_str:
+                    parent_name = p.parent.name.lower()
+                        
+                    if "opt" in parent_name or "images" in parent_name:
                         self.optical_dir = p
-                    elif "sar" in path_str and "opt" not in path_str:
+                    elif "sar" in parent_name:
                         self.sar_dir = p
-                    elif "label" in path_str:
+                    elif "label" in parent_name:
                         self.label_dir = p
 
         # Optik dosyalardan ID listesi çıkar
