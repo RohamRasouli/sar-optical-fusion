@@ -34,53 +34,30 @@ subprocess.run([sys.executable, "-m", "pip", "install", "-q",
 print("✅ Repo klonlandı ve bağımlılıklar kuruldu.")
 
 # ============================================================
-# HÜCRE 2: Veri setini bağla (symlink)
+# HÜCRE 2: Veri setini bağla ve dönüştür
 # ============================================================
 import glob
 
 # Kaggle'ın veri seti dizinini bul
-# Veri setinizin Kaggle'daki adına göre bu yolu güncellemeniz gerekebilir
 KAGGLE_INPUT = "/kaggle/input"
-possible_dirs = glob.glob(f"{KAGGLE_INPUT}/m4-sar*") + glob.glob(f"{KAGGLE_INPUT}/M4*")
+possible_dirs = glob.glob(f"{KAGGLE_INPUT}/*m4*sar*", re.IGNORECASE) if hasattr(glob, 're') else glob.glob(f"{KAGGLE_INPUT}/*m4*") + glob.glob(f"{KAGGLE_INPUT}/*M4*")
 if not possible_dirs:
     possible_dirs = glob.glob(f"{KAGGLE_INPUT}/*")
     print(f"⚠️  Mevcut veri setleri: {possible_dirs}")
-    print("    Lütfen sağ panelden M4-SAR veri setinizi ekleyin.")
+    print("    Lütfen sağ panelden M4-SAR veri setinizi eklediğinizden emin olun.")
 else:
     DATASET_DIR = possible_dirs[0]
     print(f"📂 Veri seti bulundu: {DATASET_DIR}")
-
-    # Projenin beklediği yapıyı kur
-    DATA_ROOT = "/kaggle/working/sar-optical-fusion/data/m4_sar"
-    os.makedirs(DATA_ROOT, exist_ok=True)
-
-    # Veri seti içindeki klasörleri keşfet ve bağla
-    for subdir in ["optical", "sar", "labels"]:
-        target = os.path.join(DATA_ROOT, subdir)
-        if os.path.exists(target):
-            continue
-        # Kaggle input içinde ara
-        source = None
-        for candidate in [
-            os.path.join(DATASET_DIR, subdir),
-            os.path.join(DATASET_DIR, "m4_sar", subdir),
-            os.path.join(DATASET_DIR, "data", "m4_sar", subdir),
-        ]:
-            if os.path.exists(candidate):
-                source = candidate
-                break
-        if source:
-            os.symlink(source, target)
-            print(f"  ✅ {subdir}/ → {source}")
-        else:
-            print(f"  ⚠️  {subdir}/ bulunamadı, manuel yol gerekebilir")
-
-    # Doğrula
-    for split in ["train", "val", "test"]:
-        opt_dir = os.path.join(DATA_ROOT, "optical", split)
-        if os.path.exists(opt_dir):
-            count = len(os.listdir(opt_dir))
-            print(f"  📸 {split}: {count} optik görüntü")
+    
+    # download_m4sar.py scriptini kullanarak veriyi doğru formata dönüştür (sadece kopyalama/linkleme yapar)
+    print("🔄 Veri seti proje formatına dönüştürülüyor...")
+    subprocess.run([
+        sys.executable, "scripts/download_m4sar.py", 
+        "--source", "manual", 
+        "--raw-dir", DATASET_DIR, 
+        "--target-dir", "/kaggle/working/sar-optical-fusion/data/m4_sar"
+    ], check=True)
+    print("✅ Veri seti hazırlandı.")
 
 # ============================================================
 # HÜCRE 3: GPU Kontrolü
