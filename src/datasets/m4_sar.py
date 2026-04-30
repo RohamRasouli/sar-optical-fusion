@@ -168,15 +168,16 @@ class M4SARDataset(Dataset):
         self.label_dir = self.root / "labels" / self.split
 
         import os
-        # Kaggle raw dataset yapıları ve büyük/küçük harf farklılıkları için ULTRA HIZLI dinamik arama
-        # (os.scandir kullanarak network mount üzerindeki stat() çağrılarını minimize ederiz)
-        if not self.optical_dir.exists():
-            print(f"🔍 [{self.split.upper()}] Klasör hiyerarşisi taranıyor (os.scandir ile)...", flush=True)
+        # Kaggle raw dataset yapıları için SÜPER ESNEK ve GÜÇLÜ dinamik arama
+        if not self.optical_dir.exists() or "data/m4_sar" in str(self.optical_dir):
+            print(f"🔍 [{self.split.upper()}] Veri seti hiyerarşisi taranıyor (Derinlik: 10)...", flush=True)
             queue = [(str(self.root), 0)]
             max_depth = 10
-            found_count = 0
             
-            while queue and found_count < 3:
+            # Başlangıçta hepsini None yapalım ki gerçekten bulup bulmadığımızı bilelim
+            found_opt, found_sar, found_lbl = None, None, None
+            
+            while queue and not (found_opt and found_sar and found_lbl):
                 curr_dir, depth = queue.pop(0)
                 if depth > max_depth: continue
                 
@@ -184,23 +185,41 @@ class M4SARDataset(Dataset):
                     with os.scandir(curr_dir) as it:
                         for entry in it:
                             if entry.is_dir(follow_symlinks=True):
+                                # Eğer klasör adı 'train' veya 'val' veya 'test' ise (split adımız)
                                 if entry.name.lower() == self.split.lower():
                                     p = Path(entry.path)
-                                    parent_name = p.parent.name.lower()
-                                    if "opt" in parent_name or "images" in parent_name:
-                                        self.optical_dir = p
-                                        found_count += 1
-                                    elif "sar" in parent_name:
-                                        self.sar_dir = p
-                                        found_count += 1
-                                    elif "label" in parent_name:
-                                        self.label_dir = p
-                                        found_count += 1
+                                    p_name = p.parent.name.lower()
+                                    
+                                    # Kategori eşleştirme (keyword tabanlı)
+                                    if any(k in p_name for k in ["opt", "image", "visual", "rgb"]):
+                                        found_opt = p
+                                        print(f"  ✅ Optik bulundu: {p}", flush=True)
+                                    elif any(k in p_name for k in ["sar", "radar", "s1", "sentinel1"]):
+                                        found_sar = p
+                                        print(f"  ✅ SAR/Radar bulundu: {p}", flush=True)
+                                    elif any(k in p_name for k in ["label", "ann", "mask", "gt"]):
+                                        found_lbl = p
+                                        print(f"  ✅ Etiketler bulundu: {p}", flush=True)
                                 else:
+                                    # Aramaya devam et
                                     queue.append((entry.path, depth + 1))
                 except Exception:
                     pass
+            
+            # Bulunanları asıl değişkenlere ata
+            if found_opt: self.optical_dir = found_opt
+            if found_sar: self.sar_dir = found_sar
+            if found_lbl: self.label_dir = found_lbl
 
+        # KRİTİK: Eğer biri bile eksikse dummy veriye GEÇME, hata ver ki düzeltelim!
+        missing = []
+        if not self.optical_dir.exists(): missing.append("Optik")
+        if not self.sar_dir.exists(): missing.append("SAR")
+        if not self.label_dir.exists(): missing.append("Label")
+        
+        if missing:
+            raise FileNotFoundError(f"Kritik klasörler bulunamadı: {', '.join(missing)}. "
+                                    f"Root: {self.root} taranmasına rağmen bulunamadı.")
         import os
         # Optik dosyalardan ID listesi çıkar
         if not self.optical_dir.exists():
