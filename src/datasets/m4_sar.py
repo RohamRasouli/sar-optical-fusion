@@ -170,6 +170,7 @@ class M4SARDataset(Dataset):
         # Kaggle raw dataset yapıları ve büyük/küçük harf farklılıkları için SÜPER HIZLI dinamik arama
         # (Bulut FUSE sistemlerinde rglob("*") 180.000 dosyayı taradığı için kilitlenmeye sebep olur)
         if not self.optical_dir.exists():
+            print(f"🔍 [{self.split.upper()}] Klasör hiyerarşisi taranıyor (BFS ile klasörler bulunuyor)...", flush=True)
             queue = [(self.root, 0)]
             max_depth = 10
             

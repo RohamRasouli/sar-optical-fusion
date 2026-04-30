@@ -191,17 +191,18 @@ def main():
     device = torch.device(cfg["project"]["device"]
                             if torch.cuda.is_available() or cfg["project"]["device"] == "cpu"
                             else "cpu")
-    print(f"Device: {device}")
-    print(f"Config: {args.config}")
+    print(f"Device: {device}", flush=True)
+    print(f"Config: {args.config}", flush=True)
 
     # Reproducibility
     seed = cfg["project"]["seed"]
     torch.manual_seed(seed)
 
     # Veri
+    print(f"⏳ Veri setleri (train/val) başlatılıyor...", flush=True)
     train_ds = build_dataset(cfg, split="train")
     val_ds = build_dataset(cfg, split="val")
-    print(f"Train samples: {len(train_ds)}, Val samples: {len(val_ds)}")
+    print(f"Train samples: {len(train_ds)}, Val samples: {len(val_ds)}", flush=True)
 
     train_loader = DataLoader(
         train_ds, batch_size=cfg["training"]["batch_size"], shuffle=True,
