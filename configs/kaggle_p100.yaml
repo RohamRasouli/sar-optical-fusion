@@ -7,6 +7,9 @@ defaults:
 model:
   img_size: 640
 
+project:
+  num_workers: 0  # Kaggle'da multiprocessing /dev/shm limiti yüzünden deadlock yapabilir
+
 training:
   epochs: 80
   batch_size: 16
