@@ -1,0 +1,23 @@
+# Kaggle P100 (16GB VRAM) için optimize edilmiş eğitim konfigürasyonu
+# base.yaml'ı miras alır; batch_size ve img_size P100'e göre ayarlandı.
+
+defaults:
+  - base.yaml
+
+model:
+  img_size: 640
+
+training:
+  epochs: 80
+  batch_size: 16
+  grad_accum_steps: 2
+
+loss:
+  camouflage_aware:
+    enabled: true
+    focal:
+      enabled: true
+    boundary:
+      enabled: false
+    consistency:
+      enabled: true
