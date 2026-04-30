@@ -41,13 +41,35 @@ import shutil
 
 # Kaggle'ın veri seti dizinini bul
 KAGGLE_INPUT = "/kaggle/input"
-possible_dirs = glob.glob(f"{KAGGLE_INPUT}/*m4*") + glob.glob(f"{KAGGLE_INPUT}/*M4*")
-if not possible_dirs:
+DATASET_DIR = None
+
+# /kaggle/input içindeki tüm klasörleri tara (isminin ne olduğuna bakılmaksızın)
+if os.path.exists(KAGGLE_INPUT):
+    for item in os.listdir(KAGGLE_INPUT):
+        item_path = os.path.join(KAGGLE_INPUT, item)
+        if not os.path.isdir(item_path): continue
+            
+        subdirs = [d.lower() for d in os.listdir(item_path) if os.path.isdir(os.path.join(item_path, d))]
+        if "images" in subdirs or "optical" in subdirs or "sar" in subdirs or "labels" in subdirs:
+            DATASET_DIR = item_path
+            break
+            
+        # Alt klasörleri kontrol et (bazen zip içeriği bir klasör içine açılır)
+        for subitem in os.listdir(item_path):
+            subitem_path = os.path.join(item_path, subitem)
+            if not os.path.isdir(subitem_path): continue
+            subsubdirs = [d.lower() for d in os.listdir(subitem_path) if os.path.isdir(os.path.join(subitem_path, d))]
+            if "images" in subsubdirs or "optical" in subsubdirs or "sar" in subsubdirs or "labels" in subsubdirs:
+                DATASET_DIR = subitem_path
+                break
+        if DATASET_DIR: break
+
+if not DATASET_DIR:
     print("❌ HATA: Veri seti bulunamadı!")
-    print("Lütfen sağ üstteki 'Add Data' butonuna tıklayıp 'wchao0601/m4-sar' veri setini Kaggle'a eklediğinizden emin olun.")
+    print(f"Şu anki Kaggle Input klasörleri: {os.listdir(KAGGLE_INPUT) if os.path.exists(KAGGLE_INPUT) else 'Yok'}")
+    print("Lütfen sağ üstteki 'Add Data' butonuna tıklayıp M4-SAR veri setini eklediğinizden emin olun.")
     sys.exit(1)
 else:
-    DATASET_DIR = possible_dirs[0]
     print(f"📂 Veri seti bulundu: {DATASET_DIR}")
     
     # 48 GB'lık veriyi kopyalarsak Kaggle'ın 20 GB'lık disk limiti dolar.
