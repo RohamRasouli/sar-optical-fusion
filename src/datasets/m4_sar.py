@@ -170,7 +170,7 @@ class M4SARDataset(Dataset):
         import os
         # Kaggle raw dataset yapıları için SÜPER ESNEK ve GÜÇLÜ dinamik arama
         if not self.optical_dir.exists() or "data/m4_sar" in str(self.optical_dir):
-            print(f"🔍 [{self.split.upper()}] Veri seti hiyerarşisi taranıyor (Derinlik: 10)...", flush=True)
+            print(f"[SEARCH] [{self.split.upper()}] Veri seti hiyerarsisi taraniyor (Derinlik: 10)...", flush=True)
             queue = [(str(self.root), 0)]
             max_depth = 10
             
@@ -193,20 +193,17 @@ class M4SARDataset(Dataset):
                                     # ÖNCELİKLİ eşleştirme (Yolun tamamına bakıyoruz)
                                     if any(k in full_p for k in ["label", "ann", "mask", "gt"]):
                                         if "sar" in full_p:
-                                            # Bazı setlerde sar/labels var, bunu atlayalım veya sar_label yapalım
-                                            # Ama ana label klasörünü istiyoruz. Genelde /optical/labels kullanılır.
                                             if not found_lbl: found_lbl = p
                                         else:
                                             found_lbl = p
-                                        print(f"  ✅ Etiketler bulundu: {p}", flush=True)
+                                        print(f"  [OK] Etiketler bulundu: {p}", flush=True)
                                     elif any(k in full_p for k in ["sar", "radar", "s1", "sentinel1"]):
                                         found_sar = p
-                                        print(f"  ✅ SAR/Radar bulundu: {p}", flush=True)
+                                        print(f"  [OK] SAR/Radar bulundu: {p}", flush=True)
                                     elif any(k in full_p for k in ["opt", "image", "visual", "rgb"]):
-                                        # Eğer zaten SAR olarak işaretlemediysek
                                         if not found_sar or str(p) != str(found_sar):
                                             found_opt = p
-                                            print(f"  ✅ Optik bulundu: {p}", flush=True)
+                                            print(f"  [OK] Optik bulundu: {p}", flush=True)
                                 else:
                                     queue.append((entry.path, depth + 1))
                 except Exception:
@@ -231,7 +228,7 @@ class M4SARDataset(Dataset):
         if not self.optical_dir.exists():
             raise FileNotFoundError(f"Optik klasörü yok: {self.optical_dir}. Veriyi data_root altına yerleştirdiğinden emin ol.")
             
-        print(f"⏳ [{self.split.upper()}] Dosyalar taranıyor (Kaggle ağ sürücüsünde 100.000+ dosya okumak 2-3 DAKİKA sürebilir, lütfen bekleyin)...", flush=True)
+        print(f"[BUSY] [{self.split.upper()}] Dosyalar taraniyor (Kaggle ag surucusunde 100.000+ dosya okumak 2-3 DAKIKA surebilir, lutfen bekleyin)...", flush=True)
         
         self.ids = []
         # Sadece resim uzantılı dosyaları al (pathlib.glob yerine os.listdir FUSE'da %30 daha hızlıdır)
@@ -246,13 +243,13 @@ class M4SARDataset(Dataset):
                 self.cfg.optical_ext = ext
                 break
                 
-        print(f"✅ [{self.split.upper()}] Taraması bitti: {len(self.ids)} adet görüntü bulundu.", flush=True)
+        print(f"[OK] [{self.split.upper()}] Taramasi bitti: {len(self.ids)} adet goruntu bulundu.", flush=True)
         
         if not self.ids:
             raise RuntimeError(f"Hiç optik görüntü bulunamadı: {self.optical_dir}")
             
-        # 🔗 SENSÖR EŞLEŞTİRME (Kaggle FUSE mount dostu set operasyonları)
-        print(f"🔗 Sensör verileri eşleştiriliyor (Optical + SAR + Label)...", flush=True)
+        # [LINK] SENSÖR EŞLEŞTİRME (Kaggle FUSE mount dostu set operasyonları)
+        print(f"[LINK] Sensor verileri eslestiriliyor (Optical + SAR + Label)...", flush=True)
         
         # SAR ve Label klasörlerindeki ID'leri de listele
         sar_ids = set()
@@ -270,7 +267,7 @@ class M4SARDataset(Dataset):
                 final_ids.append(img_id)
                 
         self.ids = sorted(final_ids)
-        print(f"✅ Eşleştirme tamamlandı: {len(self.ids)} adet TAM UYUMLU veri çifti bulundu.", flush=True)
+        print(f"[OK] Eslestirme tamamlandi: {len(self.ids)} adet TAM UYUMLU veri cifti bulundu.", flush=True)
         
         if not self.ids:
             raise RuntimeError(f"Eşleşen veri bulunamadı! Klasörleri kontrol edin: {self.optical_dir}, {self.sar_dir}, {self.label_dir}")

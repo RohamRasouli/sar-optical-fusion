@@ -149,6 +149,10 @@ def train_one_epoch(model, loader, loss_fn, optimizer, scheduler, scaler,
             comp = " | ".join(f"{k}={v.item():.3f}" for k, v in loss_dict.items()
                                 if torch.is_tensor(v) and k != "total")
             print(f"  [E{epoch} B{i:04d}] loss={loss.item():.3f} lr={lr:.2e} | {comp}")
+
+        # GPU'yu soğutmak için çok kısa bir bekleme (Sadece slow_down aktifse)
+        if cfg.get("training", {}).get("slow_down", False):
+            time.sleep(0.1)  # 100ms bekleme GPU yükünü %98'den %60-70'lere düşürür
             if logger is not None:
                 step = epoch * len(loader) + i
                 logger.log({
@@ -168,6 +172,8 @@ def main():
     parser.add_argument("--config", type=str, default="configs/base.yaml")
     parser.add_argument("--epochs", type=int, default=None)
     parser.add_argument("--batch_size", type=int, default=None)
+    parser.add_argument("--resume", type=str, default=None, help="Checkpoint (.pt) dosyasından devam et")
+    parser.add_argument("--slow_down", action="store_true", help="GPU'yu yormamak için yavaşlat (gece eğitimi)")
     parser.add_argument("--device", type=str, default=None)
     parser.add_argument("--output", type=str, default=None)
     parser.add_argument("--no_amp", action="store_true", help="Mixed precision'ı kapat")
@@ -194,7 +200,7 @@ def main():
     torch.manual_seed(seed)
 
     # Veri
-    print(f"⏳ Veri setleri (train/val) başlatılıyor...", flush=True)
+    print(f"[BUSY] Veri setleri (train/val) baslatiliyor...", flush=True)
     train_ds = build_dataset(cfg, split="train")
     val_ds = build_dataset(cfg, split="val")
     print(f"Train samples: {len(train_ds)}, Val samples: {len(val_ds)}", flush=True)
@@ -264,6 +270,20 @@ def main():
     use_amp = cfg["training"].get("amp", True) and not args.no_amp and device.type == "cuda"
     scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
 
+    # Resume (Kaldığı yerden devam et)
+    start_epoch = 0
+    if args.resume and Path(args.resume).exists():
+        print(f"[BUSY] Checkpoint yükleniyor: {args.resume}...", flush=True)
+        ckpt = torch.load(args.resume, map_location=device)
+        model.load_state_dict(ckpt["model_state"])
+        optimizer.load_state_dict(ckpt["optimizer_state"])
+        scheduler.load_state_dict(ckpt["scheduler_state"])
+        start_epoch = ckpt["epoch"] + 1
+        print(f"[OK] Epoch {start_epoch} noktasından devam ediliyor.", flush=True)
+    
+    # Slow down ayarını aktar
+    cfg["training"]["slow_down"] = args.slow_down
+
     # Çıktı dizini
     out_dir = Path(cfg["logging"]["output_dir"])
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -281,7 +301,7 @@ def main():
 
     # Eğitim döngüsü
     best_loss = float("inf")
-    for epoch in range(cfg["training"]["epochs"]):
+    for epoch in range(start_epoch, cfg["training"]["epochs"]):
         avg_loss, elapsed = train_one_epoch(
             model, train_loader, loss_fn, optimizer, scheduler, scaler,
             device, epoch,
