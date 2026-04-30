@@ -1,0 +1,19 @@
+# Tam multimodal eğitim — M4-SAR train üzerinde, CMAFM + CamouflageAware Loss açık
+# base.yaml'ı miras alır; aşağıdaki değerler override eder.
+
+defaults:
+  - base.yaml
+
+training:
+  epochs: 80
+  batch_size: 16
+
+loss:
+  camouflage_aware:
+    enabled: true
+    focal:
+      enabled: true
+    boundary:
+      enabled: false        # GT mask yoksa kapat
+    consistency:
+      enabled: true

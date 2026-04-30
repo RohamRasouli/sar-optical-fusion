@@ -1,0 +1,64 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+.Python
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg
+
+# Sanal env
+venv/
+env/
+.venv/
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Veri (büyük dosyalar repoda olmaz)
+data/
+datasets/
+*.tif
+*.tiff
+*.h5
+*.hdf5
+
+# Model ve checkpoint
+checkpoints/
+runs/
+wandb/
+lightning_logs/
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.engine
+
+# Log ve görseller
+logs/
+*.log
+outputs/
+results/
+*.png
+*.jpg
+*.jpeg
+!docs/**/*.png
+
+# Notebook çıktıları
+.ipynb_checkpoints/
+*.nbconvert.ipynb
+
+# Geçici
+tmp/
+temp/
+*.bak

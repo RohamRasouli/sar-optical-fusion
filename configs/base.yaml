@@ -1,0 +1,124 @@
+# Temel konfigürasyon — diğer config'ler bunu miras alır
+# ============================================================
+
+project:
+  name: sar-optical-fusion
+  seed: 42
+  device: cuda  # veya cpu
+  num_workers: 4
+
+# Model ============================================================
+model:
+  num_classes: 6      # M4-SAR: uçak, gemi, araç, köprü, depo, oil tank
+  img_size: 640
+  channels:
+    optical: 3
+    sar: 2            # VV, VH
+  encoder:
+    arch: cspdarknet_s
+    width_mult: 0.5
+    depth_mult: 0.33
+    out_channels: [128, 256, 512]   # 1/8, 1/16, 1/32
+  cmafm:
+    enabled: true
+    num_heads: [4, 4, 8]            # her ölçek için
+    window_size: 8
+    drop_path: 0.1
+    attn_dropout: 0.1
+  neck:
+    arch: pan_fpn
+    out_channels: 256
+  head:
+    decoupled: true
+    reg_max: 16                     # DFL için
+
+# Veri ============================================================
+data:
+  train_dataset: m4_sar
+  val_dataset: m4_sar
+  data_root: ./data/m4_sar
+  splits:
+    train: train.txt
+    val: val.txt
+    test: test.txt
+  preprocessing:
+    sar:
+      lee_filter: true
+      lee_window: 7
+      lee_damping: 1.0
+      to_db: true
+      clip_quantile: [0.01, 0.99]
+    optical:
+      normalize: imagenet           # mean/std ImageNet
+  augmentation:
+    enabled: true
+    mosaic: 0.5
+    mixup: 0.15
+    hsv_h: 0.015
+    hsv_s: 0.7
+    hsv_v: 0.4
+    flip_lr: 0.5
+    flip_ud: 0.0
+    camo_synth:
+      enabled: true
+      probability: 0.3              # %30 örnekte uygula
+      texture_blend_alpha: [0.4, 0.8]
+      net_overlay_prob: 0.5
+
+# Eğitim ============================================================
+training:
+  epochs: 80
+  batch_size: 16
+  grad_accum_steps: 2               # etkili batch = 32
+  amp: true                         # mixed precision (fp16)
+  grad_clip_norm: 10.0
+  optimizer:
+    name: AdamW
+    lr: 1.0e-3
+    weight_decay: 0.05
+    betas: [0.9, 0.999]
+  scheduler:
+    name: cosine
+    warmup_epochs: 3
+    min_lr: 1.0e-6
+  ema:
+    enabled: true
+    decay: 0.9999
+  freeze:
+    optical_backbone_epochs: 10
+    sar_backbone_epochs: 10
+
+# Loss ============================================================
+loss:
+  box_weight: 7.5
+  cls_weight: 0.5
+  dfl_weight: 1.5
+  camouflage_aware:
+    enabled: true
+    focal:
+      enabled: true
+      gamma_base: 2.0
+      beta: 1.5
+      lambda: 1.0
+    boundary:
+      enabled: true
+      lambda: 0.3
+    consistency:
+      enabled: true
+      lambda: 0.2
+      warmup_epochs: 5
+
+# Değerlendirme ============================================================
+evaluation:
+  iou_thresholds: [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95]
+  conf_threshold: 0.001
+  nms_iou: 0.6
+  max_detections: 300
+
+# Log ============================================================
+logging:
+  use_wandb: false                  # gerekirse aç
+  wandb_project: sar-optical-fusion
+  log_interval: 20
+  save_checkpoint_every: 5
+  output_dir: ./runs

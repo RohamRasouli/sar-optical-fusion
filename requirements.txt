@@ -1,0 +1,35 @@
+# Core
+torch>=2.1.0
+torchvision>=0.16.0
+numpy>=1.24.0
+pillow>=10.0.0
+opencv-python>=4.8.0
+pyyaml>=6.0
+tqdm>=4.65.0
+
+# Veri ve görüntü
+scikit-image>=0.21.0
+albumentations>=1.3.0
+rasterio>=1.3.0  # SAR/optik geotiff için
+
+# Deneysel takip
+wandb>=0.16.0
+tensorboard>=2.15.0
+
+# Değerlendirme
+pycocotools>=2.0.7
+matplotlib>=3.7.0
+pandas>=2.0.0
+
+# Konfigürasyon
+hydra-core>=1.3.0
+omegaconf>=2.3.0
+
+# Test ve geliştirme
+pytest>=7.4.0
+ruff>=0.1.0
+black>=23.0.0
+
+# Dağıtım için (opsiyonel, eğitim için gerekli değil)
+onnx>=1.15.0
+onnxruntime>=1.16.0
