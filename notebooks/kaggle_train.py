@@ -95,14 +95,20 @@ else:
 print("\n🚀 Eğitim başlıyor (Kaggle P100 — batch_size=16, img_size=640)...\n")
 
 # Kaggle P100 konfigürasyonu ile eğitimi başlat
-env = os.environ.copy()
-env["PYTHONPATH"] = "/kaggle/working/sar-optical-fusion" + (":" + env["PYTHONPATH"] if "PYTHONPATH" in env else "")
-env["PYTHONUNBUFFERED"] = "1"  # Subprocess loglarının Kaggle ekranına anında düşmesini sağlar
+# Subprocess yerine doğrudan fonksiyon çağrısı yapıyoruz (Kaggle loglarının anlık görünmesi için en güvenli yol)
+from src.train import main as train_main
+import sys
 
-subprocess.run([
-    sys.executable, "-u", "-m", "src.train",
-    "--config", "configs/kaggle_p100.yaml",
-], env=env, check=True)
+# Argümanları simüle et
+sys.argv = ["src.train", "--config", "configs/kaggle_p100.yaml"]
+
+print("\n🚀 Eğitim süreci başlatılıyor (Direct Process Mode)...\n")
+try:
+    train_main()
+except Exception as e:
+    print(f"\n❌ Eğitim sırasında hata oluştu: {e}")
+    import traceback
+    traceback.print_exc()
 
 print("\n✅ Eğitim tamamlandı!")
 
