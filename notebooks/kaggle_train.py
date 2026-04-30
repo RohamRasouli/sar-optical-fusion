@@ -34,35 +34,39 @@ subprocess.run([sys.executable, "-m", "pip", "install", "-q",
 print("✅ Repo klonlandı ve bağımlılıklar kuruldu.")
 
 # ============================================================
-# HÜCRE 2: Veri setini bağla ve dönüştür
+# HÜCRE 2: Veri setini bağla
 # ============================================================
 import glob
+import shutil
 
 # Kaggle'ın veri seti dizinini bul
 KAGGLE_INPUT = "/kaggle/input"
 possible_dirs = glob.glob(f"{KAGGLE_INPUT}/*m4*") + glob.glob(f"{KAGGLE_INPUT}/*M4*")
 if not possible_dirs:
-    print("⚠️  Sağ panelden veri seti eklenmemiş. Sorun değil, internetten otomatik indiriliyor (HuggingFace)...")
-    subprocess.run([sys.executable, "-m", "pip", "install", "-q", "huggingface_hub"], check=True)
-    subprocess.run([
-        sys.executable, "scripts/download_m4sar.py", 
-        "--source", "huggingface", 
-        "--target-dir", "/kaggle/working/sar-optical-fusion/data/m4_sar"
-    ], check=True)
-    print("✅ Veri seti HuggingFace'den indirildi ve hazırlandı!")
+    print("❌ HATA: Veri seti bulunamadı!")
+    print("Lütfen sağ üstteki 'Add Data' butonuna tıklayıp 'wchao0601/m4-sar' veri setini Kaggle'a eklediğinizden emin olun.")
+    sys.exit(1)
 else:
     DATASET_DIR = possible_dirs[0]
     print(f"📂 Veri seti bulundu: {DATASET_DIR}")
     
-    # download_m4sar.py scriptini kullanarak veriyi doğru formata dönüştür
-    print("🔄 Kaggle'daki veri seti proje formatına dönüştürülüyor...")
-    subprocess.run([
-        sys.executable, "scripts/download_m4sar.py", 
-        "--source", "manual", 
-        "--raw-dir", DATASET_DIR, 
-        "--target-dir", "/kaggle/working/sar-optical-fusion/data/m4_sar"
-    ], check=True)
-    print("✅ Veri seti hazırlandı.")
+    # 48 GB'lık veriyi kopyalarsak Kaggle'ın 20 GB'lık disk limiti dolar.
+    # Bu yüzden sadece bir kısayol (symlink) oluşturuyoruz.
+    DATA_ROOT = "/kaggle/working/sar-optical-fusion/data/m4_sar"
+    
+    # Varsa eskisini sil
+    if os.path.exists(DATA_ROOT) or os.path.islink(DATA_ROOT):
+        if os.path.islink(DATA_ROOT):
+            os.unlink(DATA_ROOT)
+        else:
+            shutil.rmtree(DATA_ROOT)
+            
+    # Ana klasörün (data/) var olduğundan emin ol
+    os.makedirs(os.path.dirname(DATA_ROOT), exist_ok=True)
+            
+    # Kısayol oluştur
+    os.symlink(DATASET_DIR, DATA_ROOT)
+    print(f"🔗 Veri seti bağlandı: {DATA_ROOT} -> {DATASET_DIR}")
 
 # ============================================================
 # HÜCRE 3: GPU Kontrolü

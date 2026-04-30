@@ -167,6 +167,29 @@ class M4SARDataset(Dataset):
         self.sar_dir = self.root / "sar" / self.split
         self.label_dir = self.root / "labels" / self.split
 
+        # Kaggle raw dataset yapıları için fallback
+        if not self.optical_dir.exists():
+            if (self.root / "images" / "opt" / self.split).exists():
+                self.optical_dir = self.root / "images" / "opt" / self.split
+                self.sar_dir = self.root / "images" / "sar" / self.split
+                self.label_dir = self.root / "labels" / self.split
+            elif (self.root / "optical" / "images" / self.split).exists():
+                self.optical_dir = self.root / "optical" / "images" / self.split
+                self.sar_dir = self.root / "sar" / "images" / self.split
+                self.label_dir = self.root / "optical" / "labels" / self.split
+            elif (self.root / "m4_sar" / "images" / "opt" / self.split).exists():
+                self.optical_dir = self.root / "m4_sar" / "images" / "opt" / self.split
+                self.sar_dir = self.root / "m4_sar" / "images" / "sar" / self.split
+                self.label_dir = self.root / "m4_sar" / "labels" / self.split
+            else:
+                # Kaggle'da klasör yapısı biraz daha derinde olabilir
+                for subdir in self.root.iterdir():
+                    if subdir.is_dir() and (subdir / "images" / "opt" / self.split).exists():
+                        self.optical_dir = subdir / "images" / "opt" / self.split
+                        self.sar_dir = subdir / "images" / "sar" / self.split
+                        self.label_dir = subdir / "labels" / self.split
+                        break
+
         # Optik dosyalardan ID listesi çıkar
         if not self.optical_dir.exists():
             raise FileNotFoundError(
