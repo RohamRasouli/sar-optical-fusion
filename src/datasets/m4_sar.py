@@ -145,8 +145,8 @@ class M4SARConfig:
     augment: bool = True
     p_lr: float = 0.5
     p_ud: float = 0.0
-    optical_ext: str = ".png"
-    sar_ext: str = ".npy"
+    optical_ext: str = ".jpg"
+    sar_ext: str = ".jpg"
     label_ext: str = ".txt"
 
     def __post_init__(self):
@@ -230,18 +230,25 @@ class M4SARDataset(Dataset):
             
         print(f"[BUSY] [{self.split.upper()}] Dosyalar taraniyor (Kaggle ag surucusunde 100.000+ dosya okumak 2-3 DAKIKA surebilir, lutfen bekleyin)...", flush=True)
         
+        # Optik dosyalardan ID listesi ve uzantı çıkar
         self.ids = []
-        # Sadece resim uzantılı dosyaları al (pathlib.glob yerine os.listdir FUSE'da %30 daha hızlıdır)
+        possible_exts = [".jpg", ".png", ".jpeg", ".tif", ".tiff"]
         all_files = os.listdir(self.optical_dir)
-        for ext in [".jpg", ".png", ".jpeg", self.cfg.optical_ext]:
-            matched_ids = []
-            for f_name in all_files:
-                if f_name.lower().endswith(ext):
-                    matched_ids.append(f_name[:-len(ext)])
+        
+        for ext in possible_exts:
+            matched_ids = [f[:-len(ext)] for f in all_files if f.lower().endswith(ext)]
             if matched_ids:
                 self.ids = sorted(matched_ids)
                 self.cfg.optical_ext = ext
                 break
+        
+        # SAR uzantısını da otomatik tespit et
+        if self.sar_dir.exists():
+            sar_files = os.listdir(self.sar_dir)
+            for ext in [".jpg", ".png", ".jpeg", ".tif", ".tiff", ".npy"]:
+                if any(f.lower().endswith(ext) for f in sar_files):
+                    self.cfg.sar_ext = ext
+                    break
                 
         print(f"[OK] [{self.split.upper()}] Taramasi bitti: {len(self.ids)} adet goruntu bulundu.", flush=True)
         
