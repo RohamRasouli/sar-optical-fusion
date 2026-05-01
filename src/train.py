@@ -189,10 +189,13 @@ def main():
     parser.add_argument("--slow_down", action="store_true", help="GPU'yu yormamak için yavaşlat (gece eğitimi)")
     parser.add_argument("--device", type=str, default=None)
     parser.add_argument("--output", type=str, default=None)
+    parser.add_argument("--data_root", type=str, default=None, help="Veri seti kök dizini (config'i ezer)")
     parser.add_argument("--no_amp", action="store_true", help="Mixed precision'ı kapat")
     args = parser.parse_args()
 
     cfg = load_config(args.config)
+    if args.data_root:
+        cfg["data"]["data_root"] = args.data_root
     if args.epochs:
         cfg["training"]["epochs"] = args.epochs
     if args.batch_size:
