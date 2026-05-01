@@ -190,20 +190,18 @@ class M4SARDataset(Dataset):
                                     full_p = entry.path.lower()
                                     p = Path(entry.path)
                                     
-                                    # ÖNCELİKLİ eşleştirme (Yolun tamamına bakıyoruz)
-                                    if any(k in full_p for k in ["label", "ann", "mask", "gt"]):
-                                        if "sar" in full_p:
-                                            if not found_lbl: found_lbl = p
-                                        else:
-                                            found_lbl = p
+                                    # Daha spesifik eşleştirme (Yolun son parçalarına bakıyoruz)
+                                    rel_p = str(p.relative_to(self.root)).lower()
+                                    
+                                    if any(k in rel_p for k in ["label", "ann", "mask", "gt"]):
+                                        found_lbl = p
                                         print(f"  [OK] Etiketler bulundu: {p}", flush=True)
-                                    elif any(k in full_p for k in ["sar", "radar", "s1", "sentinel1"]):
+                                    elif any(k in rel_p for k in ["sar", "radar", "s1", "sentinel1"]):
                                         found_sar = p
                                         print(f"  [OK] SAR/Radar bulundu: {p}", flush=True)
-                                    elif any(k in full_p for k in ["opt", "image", "visual", "rgb"]):
-                                        if not found_sar or str(p) != str(found_sar):
-                                            found_opt = p
-                                            print(f"  [OK] Optik bulundu: {p}", flush=True)
+                                    elif any(k in rel_p for k in ["opt", "image", "visual", "rgb"]):
+                                        found_opt = p
+                                        print(f"  [OK] Optik bulundu: {p}", flush=True)
                                 else:
                                     queue.append((entry.path, depth + 1))
                 except Exception:
