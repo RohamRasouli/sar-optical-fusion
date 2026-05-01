@@ -38,7 +38,7 @@ st.sidebar.title("⚙️ Ayarlar")
 st.sidebar.markdown("### Model")
 checkpoint_path = st.sidebar.text_input(
     "Checkpoint yolu",
-    value="runs/final.pt",
+    value="runs/best.pt",
     help="Eğitilmiş model dosyası",
 )
 device_option = st.sidebar.selectbox("Cihaz", ["cuda", "cpu"], index=0)
@@ -70,7 +70,7 @@ col_l, col_r = st.columns(2)
 with col_l:
     st.subheader("📷 Optik (Sentinel-2 RGB)")
     optical_file = st.file_uploader(
-        "PNG / JPG / TIFF",
+        "Görüntü dosyası (PNG, JPG, TIF)",
         type=["png", "jpg", "jpeg", "tif", "tiff"],
         key="optical",
     )
@@ -83,8 +83,8 @@ with col_l:
 with col_r:
     st.subheader("📡 SAR (Sentinel-1 VV+VH)")
     sar_file = st.file_uploader(
-        "TIF / NPY",
-        type=["tif", "tiff", "npy", "png"],
+        "Görüntü dosyası (TIF, NPY, PNG, JPG)",
+        type=["tif", "tiff", "npy", "png", "jpg", "jpeg"],
         key="sar",
     )
     if sar_file:

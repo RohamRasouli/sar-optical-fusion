@@ -161,7 +161,7 @@ def train_one_epoch(
             lr = scheduler.get_last_lr()[0]
             comp = " | ".join(f"{k}={v.item():.3f}" for k, v in loss_dict.items()
                                 if torch.is_tensor(v) and k != "total")
-            print(f"  [E{epoch} B{i:04d}] loss={loss.item():.3f} lr={lr:.2e} | {comp}")
+            print(f"  [E{epoch} B{i:04d}] loss={loss.item():.3f} lr={lr:.2e} | {comp}", flush=True)
 
         # GPU'yu soğutmak için çok kısa bir bekleme (Sadece slow_down aktifse)
         if slow_down:
