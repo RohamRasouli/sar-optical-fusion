@@ -30,7 +30,7 @@ model:
     out_channels: 256
   head:
     decoupled: true
-    reg_max: 16                     # DFL için
+    reg_max: 32                     # DFL için — 16 küçük nesneleri klampladı (stride=8'de max 128px → 256px oldu)
 
 # Veri ============================================================
 data:
