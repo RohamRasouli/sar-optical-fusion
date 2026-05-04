@@ -119,31 +119,29 @@ nb = {
   {
    "cell_type": "code", "execution_count": None, "id": "aa08", "metadata": {}, "outputs": [],
    "source": [
-    "# CELL 7 — EGITIM (session yenilenince direkt buradan basla)\n",
+    "# CELL 7a — Dizin hazirla (session yenilenince buradan basla)\n",
     "import os\n",
     "\n",
     "CKPT_DIR = '/content/drive/MyDrive/sar_fusion_runs'\n",
-    "REPO_DIR = '/content/sar-optical-fusion'\n",
-    "\n",
-    "# DATA_ROOT: optical/ sar/ labels/ klasorlerini iceren ust klasor\n",
-    "# Ornek: /content/data/M4-SAR/M4-SAR  (optical/ klasorunun PARENT'i)\n",
-    "DATA_ROOT = '/content/data/M4-SAR/M4-SAR'  # <-- Cell 4 ciktisina gore guncelle\n",
-    "\n",
     "os.makedirs(CKPT_DIR, exist_ok=True)\n",
-    "%cd {REPO_DIR}\n",
+    "os.chdir('/content/sar-optical-fusion')\n",
     "\n",
-    "best_ckpt = os.path.join(CKPT_DIR, 'best.pt')\n",
+    "best_ckpt = f'{CKPT_DIR}/best.pt'\n",
     "if os.path.exists(best_ckpt):\n",
-    "    resume_arg = f'--resume {best_ckpt}'\n",
-    "    print(f'[RESUME] {best_ckpt}')\n",
+    "    print(f'[RESUME] {best_ckpt} mevcut — Cell 7b komutu --resume iceriyor')\n",
     "else:\n",
-    "    resume_arg = ''\n",
-    "    print('[FRESH] Sifirdan basliyor')\n",
-    "\n",
-    "# ! magic kullan — subprocess gibi output'u canli gosterir\n",
-    "train_cmd = f'python -m src.train --config configs/kaggle_p100.yaml --data_root \"{DATA_ROOT}\" --output \"{CKPT_DIR}\" {resume_arg}'\n",
-    "print(train_cmd)\n",
-    "!{train_cmd}\n"
+    "    print('[FRESH] Checkpoint yok — sifirdan baslanacak')\n"
+   ]
+  },
+  {
+   "cell_type": "code", "execution_count": None, "id": "aa08b", "metadata": {}, "outputs": [],
+   "source": [
+    "# CELL 7b — EGITIM (! ile dogrudan shell — output canli akar)\n",
+    "# Resume icin: --resume /content/drive/MyDrive/sar_fusion_runs/best.pt ekle\n",
+    "!python -m src.train \\\n",
+    "  --config configs/kaggle_p100.yaml \\\n",
+    "  --data_root \"/content/data/M4-SAR/M4-SAR\" \\\n",
+    "  --output \"/content/drive/MyDrive/sar_fusion_runs\"\n"
    ]
   },
   {
