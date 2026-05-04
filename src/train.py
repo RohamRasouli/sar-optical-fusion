@@ -334,7 +334,7 @@ def main():
             slow_down=args.slow_down,
             max_batches=args.max_batches,
         )
-        print(f"Epoch {epoch} tamamlandı — avg_loss={avg_loss:.4f}, süre={elapsed:.1f}s")
+        print(f"Epoch {epoch} done — avg_loss={avg_loss:.4f}, elapsed={elapsed:.1f}s")
 
         # Validasyon
         model.eval()
@@ -368,7 +368,7 @@ def main():
         if val_loss < best_loss:
             best_loss = val_loss
             torch.save(ckpt, out_dir / "best.pt")
-            print(f"  ✓ En iyi model kaydedildi (val_loss={val_loss:.4f})")
+            print(f"  [BEST] Model saved (val_loss={val_loss:.4f})")
 
         save_every = cfg["logging"].get("save_checkpoint_every", 5)
         if (epoch + 1) % save_every == 0:
@@ -376,7 +376,7 @@ def main():
 
     # Final checkpoint
     torch.save(ckpt, out_dir / "final.pt")
-    print(f"\nEğitim tamamlandı. Çıktı: {out_dir}")
+    print(f"\nTraining complete. Output: {out_dir}")
     logger.finish()
 
 
