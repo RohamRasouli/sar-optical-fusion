@@ -1,27 +1,18 @@
-{
+"""Gerekli colab_train.ipynb dosyasini uretir. Calistir: python notebooks/make_nb.py"""
+import json, os
+
+nb = {
  "nbformat": 4,
  "nbformat_minor": 5,
  "metadata": {
-  "kernelspec": {
-   "display_name": "Python 3",
-   "language": "python",
-   "name": "python3"
-  },
-  "language_info": {
-   "name": "python",
-   "version": "3.10.0"
-  },
+  "kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
+  "language_info": {"name": "python", "version": "3.10.0"},
   "accelerator": "GPU",
-  "colab": {
-   "provenance": [],
-   "gpuType": "T4"
-  }
+  "colab": {"provenance": [], "gpuType": "T4"}
  },
  "cells": [
   {
-   "cell_type": "markdown",
-   "id": "aa01",
-   "metadata": {},
+   "cell_type": "markdown", "id": "aa01", "metadata": {},
    "source": [
     "# SAR + Optical Fusion — Colab Training\n",
     "**Roham Rasouli Kerahroudi — Sakarya Universitesi Bitirme Projesi**\n\n",
@@ -31,11 +22,7 @@
    ]
   },
   {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "aa02",
-   "metadata": {},
-   "outputs": [],
+   "cell_type": "code", "execution_count": None, "id": "aa02", "metadata": {}, "outputs": [],
    "source": [
     "# CELL 1 — GPU kontrol + Google Drive bagla\n",
     "import torch\n",
@@ -53,11 +40,7 @@
    ]
   },
   {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "aa03",
-   "metadata": {},
-   "outputs": [],
+   "cell_type": "code", "execution_count": None, "id": "aa03", "metadata": {}, "outputs": [],
    "source": [
     "# CELL 2 — Kaggle credentials\n",
     "from google.colab import files\n",
@@ -74,11 +57,7 @@
    ]
   },
   {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "aa04",
-   "metadata": {},
-   "outputs": [],
+   "cell_type": "code", "execution_count": None, "id": "aa04", "metadata": {}, "outputs": [],
    "source": [
     "# CELL 3 — M4-SAR dataset indir (~10-15 dakika)\n",
     "import os\n",
@@ -93,11 +72,7 @@
    ]
   },
   {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "aa05",
-   "metadata": {},
-   "outputs": [],
+   "cell_type": "code", "execution_count": None, "id": "aa05", "metadata": {}, "outputs": [],
    "source": [
     "# CELL 4 — DATA_ROOT otomatik bul\n",
     "import subprocess\n",
@@ -123,11 +98,7 @@
    ]
   },
   {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "aa06",
-   "metadata": {},
-   "outputs": [],
+   "cell_type": "code", "execution_count": None, "id": "aa06", "metadata": {}, "outputs": [],
    "source": [
     "# CELL 5 — GitHub'dan kodu cek\n",
     "%cd /content\n",
@@ -137,11 +108,7 @@
    ]
   },
   {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "aa07",
-   "metadata": {},
-   "outputs": [],
+   "cell_type": "code", "execution_count": None, "id": "aa07", "metadata": {}, "outputs": [],
    "source": [
     "# CELL 6 — Bagimliliklar kur\n",
     "!pip install rasterio -q\n",
@@ -150,11 +117,7 @@
    ]
   },
   {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "aa08",
-   "metadata": {},
-   "outputs": [],
+   "cell_type": "code", "execution_count": None, "id": "aa08", "metadata": {}, "outputs": [],
    "source": [
     "# CELL 7 — EGITIM (session yenilenince direkt buradan basla)\n",
     "import os\n",
@@ -191,11 +154,7 @@
    ]
   },
   {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "aa09",
-   "metadata": {},
-   "outputs": [],
+   "cell_type": "code", "execution_count": None, "id": "aa09", "metadata": {}, "outputs": [],
    "source": [
     "# CELL 8 — Eval (egitim bittikten sonra)\n",
     "import os\n",
@@ -224,3 +183,9 @@
   }
  ]
 }
+
+out_path = os.path.join(os.path.dirname(__file__), 'colab_train.ipynb')
+with open(out_path, 'w', encoding='utf-8') as f:
+    json.dump(nb, f, ensure_ascii=False, indent=1)
+
+print(f'OK: {out_path}')
