@@ -1,0 +1,8 @@
+# Google Colab T4 (16GB VRAM) — kaggle_p100.yaml'dan türetildi
+# Fark: num_workers=2 (Colab'da /dev/shm sorunu yok, I/O hızlanır)
+
+defaults:
+  - kaggle_p100.yaml
+
+project:
+  num_workers: 2  # Kaggle'da 0 gerekiyor ama Colab'da 2 sorunsuz çalışır
