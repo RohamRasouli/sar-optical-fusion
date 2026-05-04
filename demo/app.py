@@ -38,7 +38,7 @@ st.sidebar.title("⚙️ Ayarlar")
 st.sidebar.markdown("### Model")
 checkpoint_path = st.sidebar.text_input(
     "Checkpoint yolu",
-    value="runs/best.pt",
+    value="runs/final (1).pt",
     help="Eğitilmiş model dosyası",
 )
 device_option = st.sidebar.selectbox("Cihaz", ["cuda", "cpu"], index=0)

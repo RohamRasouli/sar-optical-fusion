@@ -61,6 +61,10 @@ def compute_ap_per_class(detections, ground_truths, num_classes: int,
             fp = torch.zeros(len(dets_c))
             seen = {img_id: [False] * len([1 for cls, _ in gts if cls == c])
                     for img_id, gts in ground_truths.items()}
+            # Detection'larda görülebilecek ama GT'siz image_id'ler için
+            for d in dets_c:
+                if d[0] not in seen:
+                    seen[d[0]] = []
 
             # Her image için class-c GT'leri
             gts_per_img = {}
@@ -110,6 +114,9 @@ def main():
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--conf_thr", type=float, default=0.001)
     parser.add_argument("--nms_iou", type=float, default=0.6)
+    parser.add_argument("--batch_size", type=int, default=4)
+    parser.add_argument("--max_samples", type=int, default=None,
+                        help="Hizli test icin ornek sayisi sinirla (orn: 500)")
     args = parser.parse_args()
 
     ckpt = torch.load(args.checkpoint, map_location="cpu")
@@ -138,8 +145,10 @@ def main():
 
     # Veri
     val_ds = build_dataset(cfg, split="val")
-    loader = DataLoader(val_ds, batch_size=8, collate_fn=collate_fn,
-                         num_workers=2)
+    if args.max_samples:
+        val_ds = torch.utils.data.Subset(val_ds, range(min(args.max_samples, len(val_ds))))
+    loader = DataLoader(val_ds, batch_size=args.batch_size, collate_fn=collate_fn,
+                         num_workers=0)
     print(f"Val samples: {len(val_ds)}")
 
     img_size = m_cfg["img_size"]
@@ -203,7 +212,7 @@ def main():
     iou_thrs = [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95]
     aps = compute_ap_per_class(detections, ground_truths,
                                  m_cfg["num_classes"], iou_thresholds=iou_thrs)
-    print("\nDeğerlendirme sonuçları:")
+    print("\nEvaluation results:")
     print(f"  mAP@50    = {aps[0.5] * 100:.2f}")
     map_5095 = sum(aps.values()) / len(aps)
     print(f"  mAP@50-95 = {map_5095 * 100:.2f}")

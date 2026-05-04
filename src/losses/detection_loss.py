@@ -331,10 +331,19 @@ class DetectionLoss(nn.Module):
                 _, sar_cls, _, _ = self._split_outputs(model_out["aux_sar"])
                 aux_sar_logits = sar_cls.reshape(-1, self.nc)
 
+            # Hard binary targets: focal loss 0/1 bekliyor, soft alignment scores değil
+            hard_cls_targets = torch.zeros_like(target_scores)
+            if fg_mask.any():
+                hard_cls_targets.scatter_(2, target_labels.unsqueeze(-1), 1.0)
+                hard_cls_targets = hard_cls_targets * fg_mask.unsqueeze(-1).float()
+
+            # Model belirsizliği = zorluk proxy (1 - en yüksek sınıf güveni)
+            difficulty = 1.0 - pred_scores.detach().max(dim=-1, keepdim=True)[0]  # (B, N, 1)
+
             cal_out = self.cal(
                 cls_logits=pred_cls.reshape(-1, self.nc),
-                cls_targets=target_scores.reshape(-1, self.nc),
-                difficulty=None,  # ileride model uncertainty eklenebilir
+                cls_targets=hard_cls_targets.reshape(-1, self.nc),
+                difficulty=difficulty.reshape(-1, 1),
                 aux_opt_logits=aux_opt_logits,
                 aux_sar_logits=aux_sar_logits,
                 epoch=epoch,
