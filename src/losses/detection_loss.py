@@ -283,7 +283,8 @@ class DetectionLoss(nn.Module):
             anchor_points * stride_tensor,
             gt_labels, gt_bboxes_px, mask_gt,
         )
-        fg_mask = assigned["fg_mask"]  # (B, N)
+        fg_mask = assigned["fg_mask"]          # (B, N)
+        target_labels = assigned["target_labels"]  # (B, N)
         target_bboxes = assigned["target_bboxes"]  # (B, N, 4)
         target_scores = assigned["target_scores"]  # (B, N, nc)
         num_pos = max(fg_mask.sum().item(), 1.0)

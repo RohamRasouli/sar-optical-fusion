@@ -109,19 +109,20 @@ def build_scheduler(optimizer, cfg: dict, num_steps: int):
 def train_one_epoch(
     model: torch.nn.Module,
     loader: DataLoader,
-    loss_fn: Any,
+    loss_fn,
     optimizer: torch.optim.Optimizer,
-    scheduler: Any,
-    scaler: torch.cuda.amp.GradScaler,
+    scheduler,
+    scaler,
     device: torch.device,
     epoch: int,
     log_interval: int = 20,
     amp: bool = True,
     grad_clip: float = 10.0,
     grad_accum: int = 1,
-    logger: Any = None,
+    logger=None,
     slow_down: bool = False,
-) -> Tuple[float, float]:
+    max_batches: int = None,
+):
     model.train()
     total_loss = 0.0
     n_batches = 0
@@ -163,6 +164,9 @@ def train_one_epoch(
                                 if torch.is_tensor(v) and k != "total")
             print(f"  [E{epoch} B{i:04d}] loss={loss.item():.3f} lr={lr:.2e} | {comp}", flush=True)
 
+        if max_batches and i + 1 >= max_batches:
+            break
+
         # GPU'yu soğutmak için çok kısa bir bekleme (Sadece slow_down aktifse)
         if slow_down:
             time.sleep(0.1)  # 100ms bekleme GPU yükünü %98'den %60-70'lere düşürür
@@ -191,6 +195,7 @@ def main():
     parser.add_argument("--output", type=str, default=None)
     parser.add_argument("--data_root", type=str, default=None, help="Veri seti kök dizini (config'i ezer)")
     parser.add_argument("--no_amp", action="store_true", help="Mixed precision'ı kapat")
+    parser.add_argument("--max_batches", type=int, default=None, help="Epoch'u N batch'te kes (fix dogrulama icin)")
     args = parser.parse_args()
 
     cfg = load_config(args.config)
@@ -327,6 +332,7 @@ def main():
             grad_accum=cfg["training"].get("grad_accum_steps", 1),
             logger=logger,
             slow_down=args.slow_down,
+            max_batches=args.max_batches,
         )
         print(f"Epoch {epoch} tamamlandı — avg_loss={avg_loss:.4f}, süre={elapsed:.1f}s")
 
