@@ -305,6 +305,7 @@ class DetectionLoss(nn.Module):
                 (anchor_points * stride_tensor) - (target_bboxes[..., :2] - target_bboxes[..., 2:] / 2),
                 (target_bboxes[..., :2] + target_bboxes[..., 2:] / 2) - (anchor_points * stride_tensor),
             ], dim=-1)  # (B, N, 4)
+            target_ltrb = target_ltrb.clamp(min=0.0)   # negatif mesafeleri engelle (küçük kutu edge case)
             target_ltrb = target_ltrb / stride_tensor  # stride'a böl (DFL aralığına getir)
             fg_dist = pred_dist[fg_mask]  # (num_pos, 4, reg_max+1)
             fg_target = target_ltrb[fg_mask]  # (num_pos, 4)

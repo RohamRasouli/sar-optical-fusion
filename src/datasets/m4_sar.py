@@ -99,9 +99,8 @@ def _load_sar(path: Path) -> torch.Tensor:
     arr = arr.astype(np.float32)
     if arr.shape[0] == 1:
         arr = np.concatenate([arr, arr], axis=0)  # (1,H,W) → (2,H,W)
-    elif arr.shape[0] == 3:
-        # RGB SAR → ilk 2 kanal al (genelde R≈VV, G≈VH)
-        arr = arr[:2]
+    elif arr.shape[0] != 2:
+        arr = arr[:2]  # 3+ kanal → ilk 2'yi al (VV, VH)
 
     return torch.from_numpy(arr)
 
