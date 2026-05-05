@@ -118,11 +118,12 @@ class SAROpticalFusionModel(nn.Module):
         result = {"main": main_out, "gates": gates}
 
         if self.aux_neck_opt is not None and self.training:
-            with torch.set_grad_enabled(True):
-                aux_opt_neck = self.aux_neck_opt(opt_feats)
-                aux_sar_neck = self.aux_neck_sar(sar_feats)
-                result["aux_opt"] = self.aux_head_opt(aux_opt_neck)
-                result["aux_sar"] = self.aux_head_sar(aux_sar_neck)
+            # set_grad_enabled(True) kaldırıldı — val loop'taki no_grad() bağlamını eziyordu
+            # Consistency loss zaten stop_grad kullandığından aux head'ler gradient gerektirmiyor
+            aux_opt_neck = self.aux_neck_opt(opt_feats)
+            aux_sar_neck = self.aux_neck_sar(sar_feats)
+            result["aux_opt"] = self.aux_head_opt(aux_opt_neck)
+            result["aux_sar"] = self.aux_head_sar(aux_sar_neck)
         return result
 
 
