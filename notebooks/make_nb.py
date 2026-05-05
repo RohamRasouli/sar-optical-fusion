@@ -165,6 +165,76 @@ nb = {
  ]
 }
 
+kaggle_nb = {
+ "nbformat": 4,
+ "nbformat_minor": 5,
+ "metadata": {
+  "kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
+  "language_info": {"name": "python", "version": "3.10.0"}
+ },
+ "cells": [
+  {
+   "cell_type": "markdown", "id": "ka01", "metadata": {},
+   "source": [
+    "# SAR + Optical Fusion — Kaggle Training\n",
+    "**Roham Rasouli Kerahroudi — Sakarya Universitesi Bitirme Projesi**\n\n",
+    "Her run'da TARGET_EPOCHS'u 8 artir: 8 → 16 → 24 → ... → 80\n\n",
+    "Dataset olarak `wchao0601/m4-sar` ekli olmali."
+   ]
+  },
+  {
+   "cell_type": "code", "execution_count": None, "id": "ka02", "metadata": {}, "outputs": [],
+   "source": [
+    "import os\n",
+    "import subprocess\n",
+    "from pathlib import Path\n",
+    "\n",
+    "# 1 — Repo kur\n",
+    "os.chdir('/kaggle/working')\n",
+    "if not Path('sar-optical-fusion').exists():\n",
+    "    subprocess.run(['git', 'clone', 'https://github.com/RohamRasouli/sar-optical-fusion.git'], check=True)\n",
+    "os.chdir('sar-optical-fusion')\n",
+    "subprocess.run(['pip', 'install', 'rasterio', '-q'], check=True)\n",
+    "subprocess.run(['pip', 'install', '-e', '.', '-q'], check=True)\n",
+    "\n",
+    "# 2 — Data root bul\n",
+    "result = subprocess.run(['find', '/kaggle/input', '-type', 'd', '-name', 'train'], capture_output=True, text=True)\n",
+    "train_dirs = [d for d in result.stdout.strip().split('\\n') if d]\n",
+    "parents = sorted(set(str(Path(d).parent.parent) for d in train_dirs))\n",
+    "DATA_ROOT = parents[0] if parents else '/kaggle/input/m4-sar/M4-SAR/M4-SAR'\n",
+    "print(f'DATA_ROOT: {DATA_ROOT}')\n",
+    "\n",
+    "# 3 — Resume kontrol\n",
+    "RUNS = '/kaggle/working/runs'\n",
+    "os.makedirs(RUNS, exist_ok=True)\n",
+    "best = f'{RUNS}/best.pt'\n",
+    "resume = f'--resume {best}' if Path(best).exists() else ''\n",
+    "print('[RESUME]' if resume else '[FRESH]')\n",
+    "\n",
+    "# 4 — Egitim\n",
+    "# Her run'da TARGET_EPOCHS'u 8 artir: 8 -> 16 -> 24 -> 32 ...\n",
+    "TARGET_EPOCHS = 8\n",
+    "\n",
+    "cmd = ' '.join([\n",
+    "    'python -m src.train',\n",
+    "    '--config configs/kaggle_p100.yaml',\n",
+    "    f'--data_root \"{DATA_ROOT}\"',\n",
+    "    f'--output \"{RUNS}\"',\n",
+    "    f'--epochs {TARGET_EPOCHS}',\n",
+    "    resume\n",
+    "])\n",
+    "print(cmd)\n",
+    "os.system(cmd)\n"
+   ]
+  }
+ ]
+}
+
+kaggle_path = os.path.join(os.path.dirname(__file__), 'kaggle_train.ipynb')
+with open(kaggle_path, 'w', encoding='utf-8') as f:
+    json.dump(kaggle_nb, f, ensure_ascii=False, indent=1)
+print(f'OK: {kaggle_path}')
+
 out_path = os.path.join(os.path.dirname(__file__), 'colab_train.ipynb')
 with open(out_path, 'w', encoding='utf-8') as f:
     json.dump(nb, f, ensure_ascii=False, indent=1)
