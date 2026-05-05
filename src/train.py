@@ -336,8 +336,9 @@ def main():
         )
         print(f"Epoch {epoch} done — avg_loss={avg_loss:.4f}, elapsed={elapsed:.1f}s")
 
-        # Validasyon
-        model.eval()
+        # Validasyon — train() modunda tut: eval() modda head decoded tensor döner,
+        # loss fonksiyonu 0 verir. no_grad() gradient hesabını zaten kapatıyor.
+        model.train()
         val_loss = 0.0
         n_val = 0
         with torch.no_grad():
