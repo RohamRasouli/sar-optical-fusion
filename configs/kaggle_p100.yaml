@@ -8,7 +8,7 @@ model:
   img_size: 640
 
 project:
-  num_workers: 0  # Kaggle'da multiprocessing /dev/shm limiti yüzünden deadlock yapabilir
+  num_workers: 2  # 0'dan 2'ye: GPU hesap yaparken CPU sonraki batch'i hazirlar
 
 training:
   epochs: 80

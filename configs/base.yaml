@@ -44,7 +44,7 @@ data:
   preprocessing:
     sar:
       lee_filter: true
-      lee_window: 7
+      lee_window: 3
       lee_damping: 1.0
       to_db: true
       clip_quantile: [0.01, 0.99]
