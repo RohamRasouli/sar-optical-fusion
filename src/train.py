@@ -204,6 +204,7 @@ def main():
     parser.add_argument("--data_root", type=str, default=None, help="Veri seti kök dizini (config'i ezer)")
     parser.add_argument("--no_amp", action="store_true", help="Mixed precision'ı kapat")
     parser.add_argument("--max_batches", type=int, default=None, help="Epoch'u N batch'te kes (fix dogrulama icin)")
+    parser.add_argument("--num_workers", type=int, default=None, help="DataLoader worker sayisi (0=single thread)")
     args = parser.parse_args()
 
     cfg = load_config(args.config)
@@ -217,6 +218,8 @@ def main():
         cfg["project"]["device"] = args.device
     if args.output:
         cfg["logging"]["output_dir"] = args.output
+    if args.num_workers is not None:
+        cfg["project"]["num_workers"] = args.num_workers
 
     device = torch.device(cfg["project"]["device"]
                             if torch.cuda.is_available() or cfg["project"]["device"] == "cpu"
