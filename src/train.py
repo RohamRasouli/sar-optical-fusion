@@ -138,6 +138,14 @@ def train_one_epoch(
             loss_dict = loss_fn(out, targets, epoch=epoch)
             loss = loss_dict["total"] / max(grad_accum, 1)
 
+        # NaN/Inf kontrolü — kötü batch'i atla, model ağırlıklarını bozma
+        if torch.isnan(loss) or torch.isinf(loss):
+            print(f"  [WARN] NaN/Inf loss B{i:04d}, batch atlaniyor", flush=True)
+            optimizer.zero_grad(set_to_none=True)
+            if amp:
+                scaler.update()
+            continue
+
         if amp:
             scaler.scale(loss).backward()
         else:
