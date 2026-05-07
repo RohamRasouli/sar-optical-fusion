@@ -142,8 +142,8 @@ def train_one_epoch(
         if torch.isnan(loss) or torch.isinf(loss):
             print(f"  [WARN] NaN/Inf loss B{i:04d}, batch atlaniyor", flush=True)
             optimizer.zero_grad(set_to_none=True)
-            if amp:
-                scaler.update()
+            # scaler.update() burada CAGRILMAZ — backward yapilmadiysa inf check
+            # kaydedilmez ve AssertionError firlatir
             continue
 
         if amp:
