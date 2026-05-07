@@ -133,17 +133,22 @@ def train_one_epoch(
         sar = batch["sar"].to(device, non_blocking=True)
         targets = batch["labels"].to(device, non_blocking=True)
 
+        # Girdi NaN/Inf kontrolü — forward'dan ÖNCE yap; aksi halde BatchNorm
+        # running stats NaN ile güncellenir ve model kalıcı bozulur
+        if (torch.isnan(opt).any() or torch.isinf(opt).any() or
+                torch.isnan(sar).any() or torch.isinf(sar).any()):
+            print(f"  [WARN] NaN/Inf input B{i:04d}, batch atlaniyor", flush=True)
+            continue
+
         with torch.cuda.amp.autocast(enabled=amp):
             out = model(opt, sar)
             loss_dict = loss_fn(out, targets, epoch=epoch)
             loss = loss_dict["total"] / max(grad_accum, 1)
 
-        # NaN/Inf kontrolü — kötü batch'i atla, model ağırlıklarını bozma
+        # Loss NaN/Inf kontrolü
         if torch.isnan(loss) or torch.isinf(loss):
             print(f"  [WARN] NaN/Inf loss B{i:04d}, batch atlaniyor", flush=True)
             optimizer.zero_grad(set_to_none=True)
-            # scaler.update() burada CAGRILMAZ — backward yapilmadiysa inf check
-            # kaydedilmez ve AssertionError firlatir
             continue
 
         if amp:
