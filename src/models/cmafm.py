@@ -82,7 +82,8 @@ class WindowCrossAttention(nn.Module):
 
         # Skor: (B*nW, num_heads, N, N)
         attn = (q @ k.transpose(-2, -1)) * self.scale
-        attn = attn.softmax(dim=-1)
+        # fp16'da çok büyük logitler softmax'a inf girer → NaN; sınırla
+        attn = attn.clamp(-1e4, 1e4).softmax(dim=-1)
         attn = self.attn_drop(attn)
 
         # Çıkış
@@ -195,7 +196,7 @@ class CMAFMBlock(nn.Module):
 
         # Drop path (eğitim sırasında stochastic)
         if self.training and self.drop_path > 0:
-            keep = 1.0 - self.drop_path
+            keep = max(1.0 - self.drop_path, 1e-6)  # sıfıra bölmeyi engelle
             mask_opt = (torch.rand(B, 1, 1, 1, device=F_opt.device) < keep).float() / keep
             mask_sar = (torch.rand(B, 1, 1, 1, device=F_opt.device) < keep).float() / keep
             sigma_opt = sigma_opt * mask_opt

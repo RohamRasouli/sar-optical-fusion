@@ -148,6 +148,13 @@ def train_one_epoch(
         # Loss NaN/Inf kontrolü
         if torch.isnan(loss) or torch.isinf(loss):
             print(f"  [WARN] NaN/Inf loss B{i:04d}, batch atlaniyor", flush=True)
+            # Forward pass BatchNorm running stats'ı NaN ile kirletmis olabilir;
+            # yerinde temizle — modelin ogrenilmis agirliklarini bozmaz
+            for m in model.modules():
+                if isinstance(m, (torch.nn.BatchNorm2d, torch.nn.BatchNorm1d,
+                                  torch.nn.BatchNorm3d)):
+                    torch.nan_to_num_(m.running_mean, nan=0.0)
+                    torch.nan_to_num_(m.running_var,  nan=1.0, posinf=1.0)
             optimizer.zero_grad(set_to_none=True)
             continue
 
@@ -305,7 +312,9 @@ def main():
 
     # AMP
     use_amp = cfg["training"].get("amp", True) and not args.no_amp and device.type == "cuda"
-    scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
+    # init_scale=2**14 (16384) — varsayılan 65536'nın yarısı;
+    # fp16 max ~65504, büyük scale → overflow riski
+    scaler = torch.cuda.amp.GradScaler(enabled=use_amp, init_scale=2. ** 14)
 
     # Resume (Kaldığı yerden devam et)
     start_epoch = 0

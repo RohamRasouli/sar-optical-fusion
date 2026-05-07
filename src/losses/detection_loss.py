@@ -36,7 +36,7 @@ class TaskAlignedAssigner:
     """
 
     def __init__(self, top_k: int = 13, num_classes: int = 6,
-                 alpha: float = 0.5, beta: float = 6.0, eps: float = 1e-9):
+                 alpha: float = 0.5, beta: float = 6.0, eps: float = 1e-6):
         self.top_k = top_k
         self.nc = num_classes
         self.alpha = alpha
@@ -262,7 +262,8 @@ class DetectionLoss(nn.Module):
         B = pred_dist.size(0)
 
         # Pred bbox: DFL → mesafe → cxcywh (piksel)
-        pred_dist_softmax = pred_dist.softmax(dim=-1)
+        # fp16'da büyük logitler softmax'a inf girer → NaN; önceden sınırla
+        pred_dist_softmax = pred_dist.clamp(-1e4, 1e4).softmax(dim=-1)
         pred_ltrb = (pred_dist_softmax * self.proj.reshape(1, 1, 1, -1)).sum(dim=-1)  # (B, N, 4)
         pred_bboxes = dist2bbox(pred_ltrb, anchor_points, xywh=True) * stride_tensor  # piksel
 

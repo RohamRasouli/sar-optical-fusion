@@ -76,7 +76,7 @@ class DynamicFocalLoss(nn.Module):
                 difficulty = difficulty.unsqueeze(-1)
             gamma = self.gamma_base * (1.0 + self.beta * difficulty)
 
-        focal_term = (1.0 - p_t) ** gamma
+        focal_term = (1.0 - p_t).clamp(min=1e-7) ** gamma
         alpha_t = self.alpha * targets + (1.0 - self.alpha) * (1.0 - targets)
         loss = alpha_t * focal_term * bce
 
@@ -144,15 +144,21 @@ class ConsistencyLoss(nn.Module):
         """Hepsi (..., C) ya da flat tensör olabilir; KL hesaplanmadan önce
         son boyutta softmax alınır.
         """
-        # Aux'lar gradient akmaz
-        with torch.no_grad():
-            p_opt = F.softmax(aux_opt_logits / self.t, dim=-1)
-            p_sar = F.softmax(aux_sar_logits / self.t, dim=-1)
+        # fp16'da büyük logitler log(0)=-inf → KL = NaN; önce sınırla
+        t = max(self.t, 1e-6)
+        main_c  = (main_logits       / t).clamp(-100, 100)
+        opt_c   = (aux_opt_logits    / t).clamp(-100, 100)
+        sar_c   = (aux_sar_logits    / t).clamp(-100, 100)
 
-        log_p_main = F.log_softmax(main_logits / self.t, dim=-1)
+        # Aux'lar gradient akmaz; min=1e-7 ile tam-0 softmax engellenir
+        with torch.no_grad():
+            p_opt = F.softmax(opt_c, dim=-1).clamp(min=1e-7)
+            p_sar = F.softmax(sar_c, dim=-1).clamp(min=1e-7)
+
+        log_p_main = F.log_softmax(main_c, dim=-1)
         kl_o = F.kl_div(log_p_main, p_opt, reduction=self.reduction)
         kl_s = F.kl_div(log_p_main, p_sar, reduction=self.reduction)
-        return 0.5 * (kl_o + kl_s) * (self.t ** 2)
+        return 0.5 * (kl_o + kl_s) * (t ** 2)
 
 
 class CamouflageAwareLoss(nn.Module):
