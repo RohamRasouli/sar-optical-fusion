@@ -19,17 +19,29 @@ nb = {
   {
    "cell_type": "code", "execution_count": None, "id": "c02", "metadata": {}, "outputs": [],
    "source": [
-    "EPOCHS = 8\n"
+    "EPOCHS = 4\n",
+    "\n",
+    "# Onceki run'in best.pt yolunu buraya yaz (yoksa bos birak)\n",
+    "# Ornek: '/kaggle/input/sar-checkpoint/best.pt'\n",
+    "RESUME_FROM = ''\n"
    ]
   },
   {
    "cell_type": "code", "execution_count": None, "id": "c03", "metadata": {}, "outputs": [],
    "source": [
-    "!python -m src.train \\\n",
-    "  --config sar-optical-fusion/configs/kaggle_p100.yaml \\\n",
-    "  --data_root /kaggle/input/m4-sar/M4-SAR/M4-SAR \\\n",
-    "  --output /kaggle/working/runs \\\n",
-    "  --epochs {EPOCHS}\n"
+    "import subprocess\n",
+    "\n",
+    "cmd = [\n",
+    "    'python', '-m', 'src.train',\n",
+    "    '--config', 'sar-optical-fusion/configs/kaggle_p100.yaml',\n",
+    "    '--data_root', '/kaggle/input/m4-sar/M4-SAR/M4-SAR',\n",
+    "    '--output', '/kaggle/working/runs',\n",
+    "    '--epochs', str(EPOCHS),\n",
+    "]\n",
+    "if RESUME_FROM:\n",
+    "    cmd += ['--resume', RESUME_FROM]\n",
+    "\n",
+    "subprocess.run(cmd, cwd='/kaggle/working', check=True)\n"
    ]
   }
  ]
