@@ -155,7 +155,8 @@ class ConsistencyLoss(nn.Module):
             p_opt = F.softmax(opt_c, dim=-1).clamp(min=1e-7)
             p_sar = F.softmax(sar_c, dim=-1).clamp(min=1e-7)
 
-        log_p_main = F.log_softmax(main_c, dim=-1)
+        # -inf log değerleri KL = 0 * (-inf) = NaN üretir; sınırla
+        log_p_main = F.log_softmax(main_c, dim=-1).clamp(min=-100)
         kl_o = F.kl_div(log_p_main, p_opt, reduction=self.reduction)
         kl_s = F.kl_div(log_p_main, p_sar, reduction=self.reduction)
         return 0.5 * (kl_o + kl_s) * (t ** 2)

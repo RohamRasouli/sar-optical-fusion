@@ -48,10 +48,12 @@ def bbox_iou(b1: torch.Tensor, b2: torch.Tensor, ciou: bool = True,
     # En küçük çevreleyen kutu
     cw = torch.max(b1_x2, b2_x2) - torch.min(b1_x1, b2_x1)
     ch = torch.max(b1_y2, b2_y2) - torch.min(b1_y1, b2_y1)
-    c2 = cw ** 2 + ch ** 2 + eps
+    # float32'de hesapla: 640² = 409600 > fp16 max (65504) → overflow → NaN
+    c2 = cw.float() ** 2 + ch.float() ** 2 + eps
 
-    # Merkez mesafe
-    rho2 = ((b2[..., 0] - b1[..., 0]) ** 2 + (b2[..., 1] - b1[..., 1]) ** 2)
+    # Merkez mesafe — aynı sebeple float32
+    rho2 = ((b2[..., 0].float() - b1[..., 0].float()) ** 2 +
+            (b2[..., 1].float() - b1[..., 1].float()) ** 2)
 
     # En-boy uyumu
     v = (4 / math.pi ** 2) * torch.pow(

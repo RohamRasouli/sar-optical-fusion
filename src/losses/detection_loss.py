@@ -262,8 +262,8 @@ class DetectionLoss(nn.Module):
         B = pred_dist.size(0)
 
         # Pred bbox: DFL → mesafe → cxcywh (piksel)
-        # fp16'da büyük logitler softmax'a inf girer → NaN; önceden sınırla
-        pred_dist_softmax = pred_dist.clamp(-1e4, 1e4).softmax(dim=-1)
+        # fp16 safe clamp: exp(50) ≈ 5e21 ama softmax normalize eder; -1e4 overflow yapar
+        pred_dist_softmax = pred_dist.clamp(-50, 50).softmax(dim=-1)
         pred_ltrb = (pred_dist_softmax * self.proj.reshape(1, 1, 1, -1)).sum(dim=-1)  # (B, N, 4)
         pred_bboxes = dist2bbox(pred_ltrb, anchor_points, xywh=True) * stride_tensor  # piksel
 
@@ -355,5 +355,10 @@ class DetectionLoss(nn.Module):
                 if k != "total" and torch.is_tensor(v):
                     loss_dict[f"cal_{k}"] = v
 
-        loss_dict["total"] = sum(v for v in loss_dict.values() if torch.is_tensor(v))
+        # Bileşen NaN/Inf → 0 olarak say, toplama kirletme
+        total = sum(
+            torch.nan_to_num(v, nan=0.0, posinf=0.0, neginf=0.0)
+            for v in loss_dict.values() if torch.is_tensor(v)
+        )
+        loss_dict["total"] = total
         return loss_dict

@@ -312,9 +312,14 @@ def main():
 
     # AMP
     use_amp = cfg["training"].get("amp", True) and not args.no_amp and device.type == "cuda"
-    # init_scale=2**14 (16384) — varsayılan 65536'nın yarısı;
-    # fp16 max ~65504, büyük scale → overflow riski
-    scaler = torch.cuda.amp.GradScaler(enabled=use_amp, init_scale=2. ** 14)
+    # init_scale=2**14 — varsayılan 65536'dan küçük; growth_factor/interval
+    # daha yavaş büyümesi NaN spike'larını erkenden yakalar
+    scaler = torch.cuda.amp.GradScaler(
+        enabled=use_amp,
+        init_scale=2. ** 14,
+        growth_factor=1.5,
+        growth_interval=500,
+    )
 
     # Resume (Kaldığı yerden devam et)
     start_epoch = 0
@@ -324,8 +329,12 @@ def main():
         model.load_state_dict(ckpt["model_state"])
         optimizer.load_state_dict(ckpt["optimizer_state"])
         scheduler.load_state_dict(ckpt["scheduler_state"])
+        # Checkpoint optimizer state'i eski LR'yi içerebilir; config'teki LR'yi uygula
+        new_lr = cfg["training"]["optimizer"]["lr"]
+        for pg in optimizer.param_groups:
+            pg["lr"] = new_lr
         start_epoch = ckpt["epoch"] + 1
-        print(f"[OK] Epoch {start_epoch} noktasindan devam ediliyor.", flush=True)
+        print(f"[OK] Epoch {start_epoch} noktasindan devam, LR={new_lr:.2e}", flush=True)
     
     # Slow down ayarını aktar
     cfg["training"]["slow_down"] = args.slow_down
@@ -361,9 +370,13 @@ def main():
         )
         print(f"Epoch {epoch} done — avg_loss={avg_loss:.4f}, elapsed={elapsed:.1f}s")
 
-        # Validasyon — train() modunda tut: eval() modda head decoded tensor döner,
-        # loss fonksiyonu 0 verir. no_grad() gradient hesabını zaten kapatıyor.
+        # Validasyon — model.train() modunda tut (head logit döner, loss hesaplanır);
+        # AMA BatchNorm running stats'ın val verisiyle kirlenmemesi için BN'i dondur.
         model.train()
+        _bn_types = (torch.nn.BatchNorm1d, torch.nn.BatchNorm2d, torch.nn.BatchNorm3d)
+        for m in model.modules():
+            if isinstance(m, _bn_types):
+                m.eval()
         val_loss = 0.0
         n_val = 0
         with torch.no_grad():
@@ -376,6 +389,10 @@ def main():
                     vl = loss_fn(out, targets, epoch=epoch)
                 val_loss += vl["total"].item()
                 n_val += 1
+        # BN'i tekrar train moduna al
+        for m in model.modules():
+            if isinstance(m, _bn_types):
+                m.train()
         val_loss /= max(n_val, 1)
         print(f"  val_loss={val_loss:.4f}")
 
