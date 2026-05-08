@@ -328,13 +328,20 @@ def main():
         ckpt = torch.load(args.resume, map_location=device)
         model.load_state_dict(ckpt["model_state"])
         optimizer.load_state_dict(ckpt["optimizer_state"])
-        scheduler.load_state_dict(ckpt["scheduler_state"])
-        # Checkpoint optimizer state'i eski LR'yi içerebilir; config'teki LR'yi uygula
+        start_epoch = ckpt["epoch"] + 1
+
+        # Optimizer LR'yi config'ten override et
         new_lr = cfg["training"]["optimizer"]["lr"]
         for pg in optimizer.param_groups:
             pg["lr"] = new_lr
-        start_epoch = ckpt["epoch"] + 1
-        print(f"[OK] Epoch {start_epoch} noktasindan devam, LR={new_lr:.2e}", flush=True)
+
+        # Scheduler state YUKLENMIYOR — base_lrs checkpoint'teki eski LR'yi yazardi.
+        # Onun yerine scheduler'i dogru adima konumlandir:
+        # start_epoch * num_steps kadar step() cagrilarak cosine egri dogru noktadan devam eder.
+        for _ in range(start_epoch * num_steps):
+            scheduler.step()
+
+        print(f"[OK] Epoch {start_epoch} noktasindan devam, LR={scheduler.get_last_lr()[0]:.2e}", flush=True)
     
     # Slow down ayarını aktar
     cfg["training"]["slow_down"] = args.slow_down
