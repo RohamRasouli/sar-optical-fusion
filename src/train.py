@@ -88,10 +88,12 @@ def build_optimizer(model: torch.nn.Module, cfg: dict):
     )
 
 
-def build_scheduler(optimizer, cfg: dict, num_steps: int):
+def build_scheduler(optimizer, cfg: dict, num_steps: int,
+                    skip_warmup: bool = False,
+                    remaining_epochs: int = None):
     sch_cfg = cfg["training"]["scheduler"]
-    warmup = sch_cfg.get("warmup_epochs", 3)
-    epochs = cfg["training"]["epochs"]
+    warmup = 0 if skip_warmup else sch_cfg.get("warmup_epochs", 3)
+    epochs = remaining_epochs if remaining_epochs is not None else cfg["training"]["epochs"]
     min_lr = sch_cfg.get("min_lr", 1e-6)
     initial_lr = cfg["training"]["optimizer"]["lr"]
 
@@ -340,9 +342,17 @@ def main():
         warm_restart = abs(ckpt_lr - new_lr) > new_lr * 0.1  # %10'dan fazla fark = warm restart
 
         if warm_restart:
-            # Warm restart: cosine egrisini epoch 0'dan baslat (yeni LR peak'i)
-            # Model agirliklari korunuyor, sadece ogrenme hizi sifirlaniyor
-            print(f"[WARM RESTART] LR {ckpt_lr:.2e} -> {new_lr:.2e}, cosine epoch 0'dan basliyor", flush=True)
+            # Warm restart: scheduler'i warmup'siz yeniden olustur
+            # Cosine decay sadece kalan epoch'lar uzerinde calisir
+            remaining = cfg["training"]["epochs"] - start_epoch
+            scheduler = build_scheduler(
+                optimizer, cfg, num_steps,
+                skip_warmup=True,
+                remaining_epochs=remaining,
+            )
+            print(f"[WARM RESTART] LR {ckpt_lr:.2e} -> {new_lr:.2e}, "
+                  f"peak={scheduler.get_last_lr()[0]:.2e}, "
+                  f"cosine over {remaining} epochs", flush=True)
         else:
             # Ayni LR ile devam: scheduler'i dogru konuma getir
             for _ in range(start_epoch * num_steps):
