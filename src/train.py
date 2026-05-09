@@ -335,11 +335,18 @@ def main():
         for pg in optimizer.param_groups:
             pg["lr"] = new_lr
 
-        # Scheduler state YUKLENMIYOR — base_lrs checkpoint'teki eski LR'yi yazardi.
-        # Onun yerine scheduler'i dogru adima konumlandir:
-        # start_epoch * num_steps kadar step() cagrilarak cosine egri dogru noktadan devam eder.
-        for _ in range(start_epoch * num_steps):
-            scheduler.step()
+        # Checkpoint LR'si ile config LR'si farkli mi? (warm restart durumu)
+        ckpt_lr = ckpt.get("config", {}).get("training", {}).get("optimizer", {}).get("lr", new_lr)
+        warm_restart = abs(ckpt_lr - new_lr) > new_lr * 0.1  # %10'dan fazla fark = warm restart
+
+        if warm_restart:
+            # Warm restart: cosine egrisini epoch 0'dan baslat (yeni LR peak'i)
+            # Model agirliklari korunuyor, sadece ogrenme hizi sifirlaniyor
+            print(f"[WARM RESTART] LR {ckpt_lr:.2e} -> {new_lr:.2e}, cosine epoch 0'dan basliyor", flush=True)
+        else:
+            # Ayni LR ile devam: scheduler'i dogru konuma getir
+            for _ in range(start_epoch * num_steps):
+                scheduler.step()
 
         print(f"[OK] Epoch {start_epoch} noktasindan devam, LR={scheduler.get_last_lr()[0]:.2e}", flush=True)
     
