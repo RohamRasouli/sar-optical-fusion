@@ -142,7 +142,7 @@ def train_one_epoch(
             print(f"  [WARN] NaN/Inf input B{i:04d}, batch atlaniyor", flush=True)
             continue
 
-        with torch.cuda.amp.autocast(enabled=amp):
+        with torch.amp.autocast("cuda", enabled=amp):
             out = model(opt, sar)
             loss_dict = loss_fn(out, targets, epoch=epoch)
             loss = loss_dict["total"] / max(grad_accum, 1)
@@ -316,7 +316,7 @@ def main():
     use_amp = cfg["training"].get("amp", True) and not args.no_amp and device.type == "cuda"
     # init_scale=2**14 — varsayılan 65536'dan küçük; growth_factor/interval
     # daha yavaş büyümesi NaN spike'larını erkenden yakalar
-    scaler = torch.cuda.amp.GradScaler(
+    scaler = torch.amp.GradScaler("cuda",
         enabled=use_amp,
         init_scale=2. ** 14,
         growth_factor=1.5,
