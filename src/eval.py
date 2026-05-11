@@ -117,10 +117,14 @@ def main():
     parser.add_argument("--batch_size", type=int, default=4)
     parser.add_argument("--max_samples", type=int, default=None,
                         help="Hizli test icin ornek sayisi sinirla (orn: 500)")
+    parser.add_argument("--data_root", type=str, default=None,
+                        help="Veri seti kök dizini (checkpoint config'ini ezer)")
     args = parser.parse_args()
 
     ckpt = torch.load(args.checkpoint, map_location="cpu")
     cfg = load_config(args.config) if args.config else ckpt["config"]
+    if args.data_root:
+        cfg["data"]["data_root"] = args.data_root
 
     device = torch.device(args.device if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")
