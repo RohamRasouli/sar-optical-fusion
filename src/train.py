@@ -343,7 +343,11 @@ def main():
 
         if warm_restart:
             # Warm restart: scheduler'i warmup'siz yeniden olustur
-            # Cosine decay sadece kalan epoch'lar uzerinde calisir
+            # load_state_dict eski initial_lr'i (ornegin 1e-3) geri yazabilir;
+            # LambdaLR base_lrs icin initial_lr'i kullanir — override et
+            for pg in optimizer.param_groups:
+                pg["lr"] = new_lr
+                pg["initial_lr"] = new_lr
             remaining = cfg["training"]["epochs"] - start_epoch
             scheduler = build_scheduler(
                 optimizer, cfg, num_steps,
