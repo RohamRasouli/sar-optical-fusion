@@ -80,8 +80,10 @@ def build_dataset(cfg: dict, split: str = "train"):
 
 def build_optimizer(model: torch.nn.Module, cfg: dict):
     opt_cfg = cfg["training"]["optimizer"]
+    # Sadece requires_grad=True olan parametreler — freeze_backbone ile azalir
+    trainable = [p for p in model.parameters() if p.requires_grad]
     return torch.optim.AdamW(
-        model.parameters(),
+        trainable,
         lr=opt_cfg["lr"],
         weight_decay=opt_cfg["weight_decay"],
         betas=tuple(opt_cfg.get("betas", [0.9, 0.999])),
@@ -219,6 +221,8 @@ def main():
     parser.add_argument("--no_amp", action="store_true", help="Mixed precision'ı kapat")
     parser.add_argument("--max_batches", type=int, default=None, help="Epoch'u N batch'te kes (fix dogrulama icin)")
     parser.add_argument("--num_workers", type=int, default=None, help="DataLoader worker sayisi (0=single thread)")
+    parser.add_argument("--freeze_backbone", action="store_true",
+                        help="Encoder'i dondur — sadece CMAFM+neck+head egitilir (~3x hizli)")
     args = parser.parse_args()
 
     cfg = load_config(args.config)
@@ -279,6 +283,17 @@ def main():
         head_reg_max=m_cfg["head"]["reg_max"],
     )
     model = build_model(model_cfg).to(device)
+
+    # Encoder freeze — CMAFM+neck+head geri kalir, encoder donmus
+    if args.freeze_backbone:
+        frozen, trainable = 0, 0
+        for name, param in model.named_parameters():
+            if name.startswith("encoder."):
+                param.requires_grad = False
+                frozen += param.numel()
+            else:
+                trainable += param.numel()
+        print(f"[FREEZE] Encoder donduruldu: {frozen/1e6:.1f}M frozen, {trainable/1e6:.1f}M trainable", flush=True)
 
     # Loss
     loss_cfg = cfg["loss"]
